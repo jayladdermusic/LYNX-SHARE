@@ -112,6 +112,10 @@ void fillGlobalBox (juce::ComboBox& box);
 // The option an editor combo stands for (resolving "Follow global").
 const Option& resolve (const juce::ComboBox& editorBox);
 
+// The next fixed grid size finer (direction < 0) or coarser than `currentTicks`, from 1/6 step to Bar ("Line" and
+// "Events" change with the zoom), on the editor's own grid or, while it follows it, the toolbar's. Returns its name.
+juce::String step (juce::ComboBox& editorBox, std::int64_t currentTicks, int beatsPerBar, int direction);
+
 // What an option does, in one sentence (the hint bar shows it for the chosen option).
 juce::String describe (const Option& option);
 } // namespace grid

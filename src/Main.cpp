@@ -3144,10 +3144,22 @@ private:
                         check ("Piano Roll: Enter deletes the note at the cursor", spoken() == tr ("Deleted {0}", { "C5" }));
                         press (juce::KeyPress::returnKey);
                         check ("Piano Roll: Enter again adds it back", spoken().startsWith (tr ("Added {0}", { "C5" })));
+                        for (int i = 0; i < 12; ++i) // (from whatever the zoom made it)
+                            press (juce::KeyPress::upKey, juce::ModifierKeys (juce::ModifierKeys::altModifier | juce::ModifierKeys::shiftModifier));
+                        check ("Piano Roll: Alt+Shift+Up, coarser up to a bar", spoken() == tr ("Bar"));
+                        for (int i = 0; i < 4; ++i) // Beat, 1/2 beat, 1/3 beat, Step
+                            press (juce::KeyPress::downKey, juce::ModifierKeys (juce::ModifierKeys::altModifier | juce::ModifierKeys::shiftModifier));
+                        check ("Piano Roll: Alt+Shift+Down, finer down to a step", spoken() == tr ("Step"));
+                        press (juce::KeyPress::rightKey);
+                        press (juce::KeyPress::returnKey);
+                        check ("Piano Roll: Enter inside the last note adds one (it does not delete it)", spoken().startsWith (tr ("Added {0}", { "C5" })));
                         press ('k', juce::ModifierKeys (juce::ModifierKeys::altModifier | juce::ModifierKeys::shiftModifier));
                         check ("Alt+Shift+K: the metronome", spoken().startsWith (tr ("Metronome {0}", { "" }).trim()));
                         press ('d', juce::ModifierKeys (juce::ModifierKeys::altModifier | juce::ModifierKeys::shiftModifier));
                         check ("Alt+Shift+D: split by channel", spoken().matchesWildcard (tr ("Split into {0} patterns", { "*" }), false));
+                        press (juce::KeyPress::F6Key);
+                        press ('2', juce::ModifierKeys (juce::ModifierKeys::altModifier | juce::ModifierKeys::shiftModifier));
+                        check ("Alt+Shift+2: fill each 2 steps", spoken().matchesWildcard ("*" + tr ("{0} notes", { "*" }), false));
                         toggleLayer();
                         check ("layer: off by its key", ! ui->getAccessLayerForTest().isOn());
                         stopTimer();

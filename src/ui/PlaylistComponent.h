@@ -138,6 +138,7 @@ public:
     void editTrack (int track, std::function<void (PlaylistTrack&)> change);
     void pasteClips (std::int64_t at = -1);
     std::int64_t gridTicks() const; // the grid step in use (resolving Screen / Nearest note)
+    SnapBox& getSnapBox() noexcept { return snapBox; }
 
     static constexpr int headerWidth = 96;
     static constexpr int toolbarHeight = 28;

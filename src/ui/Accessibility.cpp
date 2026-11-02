@@ -635,6 +635,9 @@ bool AccessLayer::runPlaylist (const std::string& id)
     const auto track = juce::jmax (0, playlist.getCurrentTrack());
     const auto grid = std::max<std::int64_t> (1, playlist.gridTicks());
 
+    if (id == "gridCoarser" || id == "gridFiner")
+        return speak (grid::step (playlist.getSnapBox(), grid, song.beatsPerBar, id == "gridCoarser" ? 1 : -1)), true;
+
     if (id == "previousTrack" || id == "nextTrack")
     {
         const auto next = juce::jlimit (0, juce::jmax (0, playlist.getNumTracks() - 1), track + (id == "nextTrack" ? 1 : -1));
@@ -697,6 +700,9 @@ bool AccessLayer::runPianoRoll (const std::string& id)
     if (pattern == nullptr)
         return false;
 
+    if (id == "gridCoarser" || id == "gridFiner")
+        return speak (grid::step (pianoRoll.getSnapBox(), grid, song.beatsPerBar, id == "gridCoarser" ? 1 : -1)), true;
+
     if (id == "up" || id == "down")
     {
         pianoKey = juce::jlimit (0, 127, pianoKey + (id == "up" ? 1 : -1));
@@ -746,7 +752,8 @@ bool AccessLayer::runPianoRoll (const std::string& id)
     }
     else if (id == "toggleNote")
     {
-        if (const auto existing = accessnav::noteAt (*pattern, channel, pianoKey, pianoCursor); existing >= 0)
+        // Enter on a note's start deletes it; inside a longer note it adds one there and the earlier note ends at it
+        if (const auto existing = accessnav::noteStartingAt (*pattern, channel, pianoKey, pianoCursor); existing >= 0)
         {
             pianoRoll.setSelection ({});
             engine.editSong ([existing] (Song& s) {
@@ -761,12 +768,15 @@ bool AccessLayer::runPianoRoll (const std::string& id)
         note.length = std::max<std::int64_t> (1, pianoRoll.newNoteLength());
         note.channel = channel;
         note.key = pianoKey;
-        engine.editSong ([note] (Song& s) {
+        const auto held = accessnav::noteAt (*pattern, channel, pianoKey, pianoCursor);
+        engine.editSong ([note, held] (Song& s) {
             auto& p = s.patterns[(std::size_t) s.currentPattern];
+            if (held >= 0)
+                p.notes[(std::size_t) held].length = note.start - p.notes[(std::size_t) held].start;
             p.notes.push_back (note);
             p.sortNotes();
         });
-        const auto added = accessnav::noteAt (*currentPattern (engine.getSong()), channel, pianoKey, pianoCursor);
+        const auto added = accessnav::noteStartingAt (*currentPattern (engine.getSong()), channel, pianoKey, pianoCursor);
         pianoRoll.setSelection (added >= 0 ? std::vector<int> { added } : std::vector<int> {});
         preview ({ pianoKey });
         speak (tr ("Added {0}", { notesText ({ added }) }));
@@ -1297,6 +1307,13 @@ void AccessLayer::afterAction (const std::string& id, Context focus)
     }
     if (id == "browser.next" || id == "browser.previous" || id == "browser.openFolder" || id == "browser.closeFolder" || starts ("browser.swap"))
         return speak (panels.browser.describeSelection());
+    if (starts ("rack.fillEach")) // the channel and how many steps it has now
+    {
+        const auto channel = engine.getSelectedChannel();
+        const auto* pattern = currentPattern (song);
+        const auto steps = pattern == nullptr ? 0 : std::count_if (pattern->notes.begin(), pattern->notes.end(), [channel] (const Note& n) { return n.channel == channel; });
+        return speak (channelText (channel) + ", " + (steps == 1 ? tr ("1 note") : tr ("{0} notes", { juce::String ((int) steps) })));
+    }
     if (id == "rack.sendToInserts" || id == "rack.linkToInsert" || id == "mixer.linkChannels" || id == "mixer.linkChannelsFrom") // each channel and its insert
     {
         juce::StringArray linked;

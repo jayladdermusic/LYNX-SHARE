@@ -130,6 +130,10 @@ std::vector<Action> makeActions()
         { "rack.deleteSelected", TR_NOOP ("Delete the selected channels"), Context::channelRack, { chord (del, alt) } },
         { "rack.sendToInserts", TR_NOOP ("Send the selected channels to free mixer inserts"), Context::channelRack, { chord ('L', ctrl) } },
         { "rack.linkToInsert", TR_NOOP ("Link the selected channels to an insert..."), Context::global, { chord ('L', alt | shift) } },
+        { "rack.fillEach1", TR_NOOP ("Fill each step"), Context::global, { chord ('1', alt | shift) } },
+        { "rack.fillEach2", TR_NOOP ("Fill each 2 steps"), Context::global, { chord ('2', alt | shift) } },
+        { "rack.fillEach4", TR_NOOP ("Fill each 4 steps"), Context::global, { chord ('4', alt | shift) } },
+        { "rack.fillEach8", TR_NOOP ("Fill each 8 steps"), Context::global, { chord ('8', alt | shift) } },
         { "rack.graphEditor", TR_NOOP ("Step graph lanes on/off"), Context::channelRack, { chord ('K', ctrl) } },
         { "rack.pianoRollView", TR_NOOP ("Piano-roll view of all channels on/off"), Context::channelRack, {} },
         { "rack.follow", TR_NOOP ("Follow the playhead (page along with the playing step) on/off"), Context::channelRack, {} },
@@ -304,6 +308,8 @@ std::vector<Action> makeActions()
     access ("access.playlist.nextTrack", TR_NOOP ("Next track"), Context::playlist, { chord (down) });
     access ("access.playlist.left", TR_NOOP ("Move the cursor one grid step left"), Context::playlist, { chord (left) });
     access ("access.playlist.right", TR_NOOP ("Move the cursor one grid step right"), Context::playlist, { chord (right) });
+    access ("access.playlist.gridCoarser", TR_NOOP ("Coarser grid"), Context::playlist, { chord (up, alt | shift) });
+    access ("access.playlist.gridFiner", TR_NOOP ("Finer grid"), Context::playlist, { chord (down, alt | shift) });
     access ("access.playlist.previousBar", TR_NOOP ("Move the cursor one bar left"), Context::playlist, { chord (left, alt) });
     access ("access.playlist.nextBar", TR_NOOP ("Move the cursor one bar right"), Context::playlist, { chord (right, alt) });
     access ("access.playlist.start", TR_NOOP ("Move the cursor to the start"), Context::playlist, { chord (home) });
@@ -327,6 +333,8 @@ std::vector<Action> makeActions()
     access ("access.pianoRoll.nextChord", TR_NOOP ("Next chord"), Context::pianoRoll, { chord (tab) });
     access ("access.pianoRoll.higherNote", TR_NOOP ("Next higher note in the chord"), Context::pianoRoll, { chord (up, alt) });
     access ("access.pianoRoll.lowerNote", TR_NOOP ("Next lower note in the chord"), Context::pianoRoll, { chord (down, alt) });
+    access ("access.pianoRoll.gridCoarser", TR_NOOP ("Coarser grid"), Context::pianoRoll, { chord (up, alt | shift) });
+    access ("access.pianoRoll.gridFiner", TR_NOOP ("Finer grid"), Context::pianoRoll, { chord (down, alt | shift) });
     access ("access.pianoRoll.toggleNote", TR_NOOP ("Add or delete a note at the cursor"), Context::pianoRoll, { chord (enter) });
     access ("access.pianoRoll.toggleSelection", TR_NOOP ("Select or deselect the note at the cursor"), Context::pianoRoll, { chord (enter, ctrl) });
 

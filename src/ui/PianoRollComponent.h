@@ -108,6 +108,7 @@ public:
     const std::vector<int>& getSelection() const noexcept { return selection; }
     void setSelection (std::vector<int> indices);
     std::int64_t gridTicks() const;        // the grid step in use (resolving Screen / Nearest note)
+    SnapBox& getSnapBox() noexcept { return snapBox; }
     std::int64_t newNoteLength() const;
     juce::PopupMenu toolsMenu();
     juce::PopupMenu midiMenu();

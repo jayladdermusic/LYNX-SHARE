@@ -29,6 +29,9 @@ On macOS, Ctrl below means Cmd and Alt means Option. The menus are in the macOS 
 | Alt+Shift+T | Typing keyboard as a piano on / off (also Ctrl+T) |
 | Alt+Shift+D | Split the current pattern by channel |
 | Alt+Shift+L | Link the selected channels to an insert, picked from a list |
+| Alt+Shift+1 / 2 / 4 / 8 | Fill each step / 2 / 4 / 8 steps of the selected channels |
+
+The grid keys go through the fixed sizes, 1/6 step to Bar, and say the new one; they set the editor's own grid, or the toolbar's while the editor follows it. The "Line" grid follows the zoom, so the cursor's step changes with it until you pick a fixed size.
 
 Panels are switched with their usual keys: F5 Playlist, F6 Channel Rack, F7 Piano Roll, F9 Mixer, Alt+F8 Browser. The same key on the focused panel hides it. The keyboard focus moves into the panel, and the panel and its current item are read. Moving the VoiceOver cursor into a panel makes it the focused one too.
 
@@ -53,6 +56,7 @@ The keyboard follows the VoiceOver cursor onto the toolbar controls: there the a
 | Enter | Open the current clip (pattern in the Piano Roll, audio in its editor, automation) |
 | Alt+Enter | Place the current pattern or brush at the cursor |
 | [ / ] | Start / end the time selection at the cursor |
+| Alt+Shift+Up / Down | Coarser / finer grid |
 
 While stopped in song mode the playhead follows the cursor, so Space plays from there. The usual Delete, Ctrl+C, Ctrl+X, Ctrl+V, Ctrl+B and Ctrl+A act on the selected clips and are reported.
 
@@ -66,7 +70,8 @@ While stopped in song mode the playhead follows the cursor, so Space plays from 
 | Home / End | Start / end of the pattern |
 | Tab / Shift+Tab | Next / previous chord (selects and plays it) |
 | Alt+Up / Down | Next higher / lower note in the chord |
-| Enter | Add a note at the cursor, or delete the note there |
+| Enter | Add a note at the cursor, or delete the note that starts there (inside a longer note, the new note follows it and the longer note ends there) |
+| Alt+Shift+Up / Down | Coarser / finer grid |
 | Ctrl+Enter | Select or deselect the note at the cursor |
 
 The Piano Roll edits the selected channel. Shift+arrows move the selected notes a semitone or a grid step, Ctrl+Up / Down an octave. The menu of the current item adds Note properties, Parameters, and the Select, Tools and MIDI menus.

@@ -305,6 +305,29 @@ const Option& resolve (const juce::ComboBox& editorBox)
     return options()[(std::size_t) juce::jlimit (0, (int) options().size() - 1, index)];
 }
 
+juce::String step (juce::ComboBox& editorBox, std::int64_t currentTicks, int beatsPerBar, int direction)
+{
+    const auto& list = options();
+    int chosen = -1;
+    for (int i = 0; i < (int) list.size(); ++i) // (fixed sizes in growing order)
+    {
+        const auto& o = list[(std::size_t) i];
+        if (o.kind != Kind::ticks && o.kind != Kind::bar)
+            continue;
+        const auto ticks = o.kind == Kind::bar ? (std::int64_t) ppq * std::max (1, beatsPerBar) : (std::int64_t) o.ticks;
+        if (direction > 0 ? ticks > currentTicks && chosen < 0 : ticks < currentTicks)
+            chosen = i;
+    }
+    if (chosen < 0) // already the finest or the coarsest
+        return tr (resolve (editorBox).name);
+
+    if (editorBox.getSelectedId() <= followId)
+        EditorGlobals::get().setGridOption (chosen);
+    else
+        editorBox.setSelectedId (chosen + 2);
+    return tr (list[(std::size_t) chosen].name);
+}
+
 juce::String describe (const Option& option)
 {
     switch (option.kind)

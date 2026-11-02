@@ -33,4 +33,6 @@ std::vector<int> chordAt (const Pattern& pattern, int channel, std::int64_t star
 std::int64_t nextChordStart (const Pattern& pattern, int channel, std::int64_t from, int direction);
 // The note of `channel` on `key` that sounds at `tick` (the latest to start), or -1.
 int noteAt (const Pattern& pattern, int channel, int key, std::int64_t tick);
+// The note of `channel` on `key` that starts at `tick`, or -1.
+int noteStartingAt (const Pattern& pattern, int channel, int key, std::int64_t tick);
 } // namespace lynx::accessnav

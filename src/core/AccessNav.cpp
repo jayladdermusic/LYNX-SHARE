@@ -84,4 +84,14 @@ int noteAt (const Pattern& pattern, int channel, int key, std::int64_t tick)
     }
     return found;
 }
+int noteStartingAt (const Pattern& pattern, int channel, int key, std::int64_t tick)
+{
+    for (int i = 0; i < (int) pattern.notes.size(); ++i)
+    {
+        const auto& n = pattern.notes[(std::size_t) i];
+        if (n.channel == channel && n.key == key && n.start == tick)
+            return i;
+    }
+    return -1;
+}
 } // namespace lynx::accessnav

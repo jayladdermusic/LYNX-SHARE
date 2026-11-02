@@ -1324,6 +1324,7 @@ bool MainComponent::runAction (const std::string& id)
     else if (is ("pattern.splitByChannel")) splitPatternByChannelNow();
     else if (is ("pattern.focusSelector")) togglePatternSelector();
     else if (is ("rack.linkToInsert")) showLinkToInsertMenu();
+    else if (id.rfind ("rack.fillEach", 0) == 0) rack.fillSelected (std::stoi (id.substr (13)));
     else if (is ("pattern.moveUp")) movePatternNow (-1);
     else if (is ("pattern.moveDown")) movePatternNow (1);
     else if (id.rfind ("pattern.select", 0) == 0) selectPattern (std::stoi (id.substr (14)) - 1);

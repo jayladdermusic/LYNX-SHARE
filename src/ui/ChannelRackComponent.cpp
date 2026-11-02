@@ -2394,6 +2394,7 @@ juce::PopupMenu ChannelRackComponent::buildChannelMenu (int channel)
         });
     }
     menu.addSeparator();
+    menu.addItem (tr ("Fill each step"), [this] { fillSelected (1); });
     menu.addItem (tr ("Fill each 2 steps"), [this] { fillSelected (2); });
     menu.addItem (tr ("Fill each 4 steps"), [this] { fillSelected (4); });
     menu.addItem (tr ("Fill each 8 steps"), [this] { fillSelected (8); });
