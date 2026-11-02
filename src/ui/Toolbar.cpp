@@ -67,17 +67,23 @@ SongPositionBar::SongPositionBar (AudioEngine& e) : engine (e)
 double SongPositionBar::length() const { return loopLength (engine.getSong()); }
 double SongPositionBar::position() const { return playheadTicks (engine); }
 
+// the position as a fraction of the song (or pattern), read as bar : beat : step
+ui::ValueAccess SongPositionBar::valueAccess()
+{
+    return { [this] { return position() / length(); },
+             [this] (double fraction) { return barBeatStep (engine.getSong(), fraction * length(), engine.getTransport().beatsPerBar.load()); },
+             [this] (double fraction) {
+                 engine.seek (juce::jlimit (0.0, length() - 1.0, std::round (fraction * length() / ticksPerStep) * ticksPerStep));
+                 update();
+             } };
+}
+
 std::unique_ptr<juce::AccessibilityHandler> SongPositionBar::createAccessibilityHandler()
 {
-    // the position as a fraction of the song (or pattern), read as bar : beat : step
-    return ui::createValueHandler (*this, juce::AccessibilityRole::slider,
-                                   { [this] { return position() / length(); },
-                                     [this] (double fraction) { return barBeatStep (engine.getSong(), fraction * length(), engine.getTransport().beatsPerBar.load()); },
-                                     [this] (double fraction) {
-                                         engine.seek (juce::jlimit (0.0, length() - 1.0, std::round (fraction * length() / ticksPerStep) * ticksPerStep));
-                                         update();
-                                     } });
+    return ui::createValueHandler (*this, juce::AccessibilityRole::slider, valueAccess());
 }
+
+bool SongPositionBar::keyPressed (const juce::KeyPress& key) { return ui::stepValueByKey (*this, key, valueAccess()); }
 
 juce::Rectangle<float> SongPositionBar::track() const
 {
@@ -291,13 +297,19 @@ MasterKnob::MasterKnob (AudioEngine& e, Kind k) : engine (e), kind (k)
     setRepaintsOnMouseActivity (true);
 }
 
-std::unique_ptr<juce::AccessibilityHandler> MasterKnob::createAccessibilityHandler()
+ui::ValueAccess MasterKnob::valueAccess()
 {
     const auto s = spec();
-    return ui::createValueHandler (*this, juce::AccessibilityRole::slider,
-                                   { [this] { return value(); }, [this] (double v) { return spec().text (v); }, [this] (double v) { setValue (v); },
-                                     s.minimum, s.maximum, kind == Kind::pitch ? 10.0 : 0.0 }); // (pitch: 10 cents a step)
+    return { [this] { return value(); }, [this] (double v) { return spec().text (v); }, [this] (double v) { setValue (v); },
+             s.minimum, s.maximum, kind == Kind::pitch ? 10.0 : 0.0 }; // (pitch: 10 cents a step)
 }
+
+std::unique_ptr<juce::AccessibilityHandler> MasterKnob::createAccessibilityHandler()
+{
+    return ui::createValueHandler (*this, juce::AccessibilityRole::slider, valueAccess());
+}
+
+bool MasterKnob::keyPressed (const juce::KeyPress& key) { return ui::stepValueByKey (*this, key, valueAccess()); }
 
 bool MasterKnob::available() const
 {

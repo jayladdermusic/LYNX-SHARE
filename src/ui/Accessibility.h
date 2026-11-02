@@ -63,6 +63,9 @@ public:
     void update (keys::Context focus);
     // Speaks when the layer is on.
     void speak (const juce::String& text) const;
+    // Moves the keyboard to the panel's cover (only said when it cannot have the focus).
+    void focusPanel (keys::Context context);
+    juce::String insertName (int track) const; // "Master", "Insert 3" or "3 Drums" (as the settings say)
     const juce::String& getLastSpoken() const noexcept { return lastSpoken; } // (--accesstest)
     void showSettings();
 
@@ -82,7 +85,6 @@ private:
     juce::Component& panelComponent (keys::Context context) const;
     keys::Context panelContaining (const juce::Component* component) const; // global when none
     void attachFocusTargets (bool attach);
-    void focusPanel (keys::Context context);
 
     // reading things out
     juce::String positionText (std::int64_t tick) const;

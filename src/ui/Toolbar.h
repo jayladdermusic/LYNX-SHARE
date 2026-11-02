@@ -23,6 +23,7 @@ class SongPositionBar final : public juce::Component,
 public:
     explicit SongPositionBar (AudioEngine& e);
     std::unique_ptr<juce::AccessibilityHandler> createAccessibilityHandler() override;
+    bool keyPressed (const juce::KeyPress& key) override;
     void update(); // from the main window's timer
     void paint (juce::Graphics& g) override;
     void mouseEnter (const juce::MouseEvent&) override { repaint(); }
@@ -36,6 +37,7 @@ public:
 private:
     double length() const;
     double position() const;
+    ui::ValueAccess valueAccess();
     void seekTo (int x);
     juce::Rectangle<float> track() const;
     AudioEngine& engine;
@@ -91,6 +93,7 @@ public:
 
     MasterKnob (AudioEngine& e, Kind k);
     std::unique_ptr<juce::AccessibilityHandler> createAccessibilityHandler() override;
+    bool keyPressed (const juce::KeyPress& key) override;
     void update(); // repaints when the song's value changed
     void paint (juce::Graphics& g) override;
     void mouseEnter (const juce::MouseEvent&) override { repaint(); }
@@ -104,6 +107,7 @@ public:
 
 private:
     ui::ValueSpec spec() const;
+    ui::ValueAccess valueAccess();
     double value() const;
     void setValue (double v);
     bool available() const;

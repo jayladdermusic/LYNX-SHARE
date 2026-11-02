@@ -61,6 +61,11 @@ std::optional<double> ValueSpec::parse (const juce::String& typed) const
     return controls::snapToInterval (v, minimum, interval);
 }
 
+static double stepOf (const ValueAccess& access)
+{
+    return access.step > 0.0 ? access.step : (access.maximum - access.minimum) / 100.0;
+}
+
 std::unique_ptr<juce::AccessibilityHandler> createValueHandler (juce::Component& c, juce::AccessibilityRole role, ValueAccess access)
 {
     struct Value final : juce::AccessibilityValueInterface
@@ -77,7 +82,7 @@ std::unique_ptr<juce::AccessibilityHandler> createValueHandler (juce::Component&
         void setValueAsString (const juce::String& typed) override { setValue (typed.getDoubleValue()); }
         AccessibleValueRange getRange() const override
         {
-            return { { access.minimum, access.maximum }, access.step > 0.0 ? access.step : (access.maximum - access.minimum) / 100.0 };
+            return { { access.minimum, access.maximum }, stepOf (access) };
         }
 
         ValueAccess access;
@@ -85,6 +90,29 @@ std::unique_ptr<juce::AccessibilityHandler> createValueHandler (juce::Component&
 
     return std::make_unique<juce::AccessibilityHandler> (c, role, juce::AccessibilityActions(),
                                                          juce::AccessibilityHandler::Interfaces { std::make_unique<Value> (std::move (access)) });
+}
+
+bool stepValueByKey (juce::Component& c, const juce::KeyPress& key, const ValueAccess& access)
+{
+    if (access.set == nullptr)
+        return false;
+
+    const auto step = stepOf (access), value = access.get();
+    const auto code = key.getKeyCode();
+    double target = value;
+
+    if (code == juce::KeyPress::upKey || code == juce::KeyPress::rightKey) target = value + step;
+    else if (code == juce::KeyPress::downKey || code == juce::KeyPress::leftKey) target = value - step;
+    else if (code == juce::KeyPress::pageUpKey) target = value + 10.0 * step;
+    else if (code == juce::KeyPress::pageDownKey) target = value - 10.0 * step;
+    else if (code == juce::KeyPress::homeKey) target = access.minimum;
+    else if (code == juce::KeyPress::endKey) target = access.maximum;
+    else return false;
+
+    access.set (juce::jlimit (access.minimum, access.maximum, target));
+    if (auto* handler = c.getAccessibilityHandler())
+        handler->notifyAccessibilityEvent (juce::AccessibilityEvent::valueChanged);
+    return true;
 }
 
 juce::String utilityVolumeText (double volume)

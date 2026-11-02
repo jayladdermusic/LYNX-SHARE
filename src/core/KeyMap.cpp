@@ -53,7 +53,7 @@ std::vector<Action> makeActions()
         { "transport.toggleMode", TR_NOOP ("Pattern / song mode"), Context::global, { chord ('L') }, true },
         { "transport.nextMarker", TR_NOOP ("Jump to the next song marker (Quantize song jumps while playing)"), Context::global, { chord (numpadMultiply, alt) } },
         { "transport.previousMarker", TR_NOOP ("Jump to the previous song marker"), Context::global, { chord (numpadDivide, alt) } },
-        { "view.typingPiano", TR_NOOP ("Typing keyboard as a piano on/off"), Context::global, { chord ('T', ctrl) } },
+        { "view.typingPiano", TR_NOOP ("Typing keyboard as a piano on/off"), Context::global, { chord ('T', ctrl), chord ('T', alt | shift) } },
         { "view.toolbar", TR_NOOP ("Show or hide the toolbar panels"), Context::global, { chord (f11, ctrl) } },
         { "view.audioEditor", TR_NOOP ("Open the audio editor"), Context::global, {} },
         { "view.tempoTapper", TR_NOOP ("Tempo tapper (tap the tempo)"), Context::global, { chord (f5, ctrl) } },
@@ -91,12 +91,14 @@ std::vector<Action> makeActions()
         { "pattern.delete", TR_NOOP ("Delete the current pattern"), Context::global, { chord (del, ctrl | shift) } },
         { "pattern.moveUp", TR_NOOP ("Move the current pattern up"), Context::global, { chord (up, ctrl | shift) } },
         { "pattern.moveDown", TR_NOOP ("Move the current pattern down"), Context::global, { chord (down, ctrl | shift) } },
+        { "pattern.splitByChannel", TR_NOOP ("Split the current pattern by channel"), Context::global, { chord ('D', alt | shift) } },
+        { "pattern.focusSelector", TR_NOOP ("Go to the pattern selector, or back from it"), Context::global, { chord ('N', alt | shift) } },
 
         // recording
         { "transport.record", TR_NOOP ("Recording on/off"), Context::global, { chord ('R') } },
-        { "transport.metronome", TR_NOOP ("Metronome on/off"), Context::global, { chord ('M', ctrl) } },
-        { "record.countIn", TR_NOOP ("Count-in before recording on/off"), Context::global, { chord ('P', ctrl) } },
-        { "record.waitForInput", TR_NOOP ("Recording waits for the first note on/off"), Context::global, { chord ('I', ctrl) } },
+        { "transport.metronome", TR_NOOP ("Metronome on/off"), Context::global, { chord ('M', ctrl), chord ('K', alt | shift) } },
+        { "record.countIn", TR_NOOP ("Count-in before recording on/off"), Context::global, { chord ('P', ctrl), chord ('U', alt | shift) } },
+        { "record.waitForInput", TR_NOOP ("Recording waits for the first note on/off"), Context::global, { chord ('I', ctrl), chord ('W', alt | shift) } },
         { "record.quickAudio", TR_NOOP ("Record audio now: arm the selected insert and record (press again to stop)"), Context::global, { chord ('R', shift) } },
 
         // files and history
@@ -127,6 +129,7 @@ std::vector<Action> makeActions()
         { "rack.clone", TR_NOOP ("Clone the selected channels"), Context::channelRack, { chord ('C', alt) } },
         { "rack.deleteSelected", TR_NOOP ("Delete the selected channels"), Context::channelRack, { chord (del, alt) } },
         { "rack.sendToInserts", TR_NOOP ("Send the selected channels to free mixer inserts"), Context::channelRack, { chord ('L', ctrl) } },
+        { "rack.linkToInsert", TR_NOOP ("Link the selected channels to an insert..."), Context::global, { chord ('L', alt | shift) } },
         { "rack.graphEditor", TR_NOOP ("Step graph lanes on/off"), Context::channelRack, { chord ('K', ctrl) } },
         { "rack.pianoRollView", TR_NOOP ("Piano-roll view of all channels on/off"), Context::channelRack, {} },
         { "rack.follow", TR_NOOP ("Follow the playhead (page along with the playing step) on/off"), Context::channelRack, {} },

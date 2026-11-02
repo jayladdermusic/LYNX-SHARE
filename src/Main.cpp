@@ -3095,8 +3095,12 @@ private:
                         int unnamed = 0;
                         writeTree (root, 0, tree, unnamed);
                         juce::File (reportPath).withFileExtension ("tree.txt").replaceWithText (tree);
-                        const auto* transport = findChild (root, tr ("Transport"));
+                        auto* transport = findChild (root, tr ("Transport"));
                         check ("screen reader: the Transport group holds its controls", transport != nullptr && transport->getChildren().size() == 8);
+                        auto* tempo = transport != nullptr ? findChild (*transport, tr ("Tempo (BPM)")) : nullptr;
+                        check ("toolbar: the tempo takes the keyboard, Up raises it",
+                               tempo != nullptr && tempo->getComponent().getWantsKeyboardFocus()
+                                   && tempo->getComponent().keyPressed (juce::KeyPress (juce::KeyPress::upKey)) && engine->getSong().bpm == 131.0);
                         auto* playlistGroup = findChild (root, tr ("Playlist"));
                         check ("screen reader: the Playlist group holds its title bar and tools",
                                playlistGroup != nullptr && findChild (*playlistGroup, tr ("Close")) != nullptr
@@ -3140,6 +3144,10 @@ private:
                         check ("Piano Roll: Enter deletes the note at the cursor", spoken() == tr ("Deleted {0}", { "C5" }));
                         press (juce::KeyPress::returnKey);
                         check ("Piano Roll: Enter again adds it back", spoken().startsWith (tr ("Added {0}", { "C5" })));
+                        press ('k', juce::ModifierKeys (juce::ModifierKeys::altModifier | juce::ModifierKeys::shiftModifier));
+                        check ("Alt+Shift+K: the metronome", spoken().startsWith (tr ("Metronome {0}", { "" }).trim()));
+                        press ('d', juce::ModifierKeys (juce::ModifierKeys::altModifier | juce::ModifierKeys::shiftModifier));
+                        check ("Alt+Shift+D: split by channel", spoken().matchesWildcard (tr ("Split into {0} patterns", { "*" }), false));
                         toggleLayer();
                         check ("layer: off by its key", ! ui->getAccessLayerForTest().isOn());
                         stopTimer();

@@ -60,6 +60,9 @@ struct ValueAccess
     double minimum = 0.0, maximum = 1.0, step = 0.0;
 };
 std::unique_ptr<juce::AccessibilityHandler> createValueHandler (juce::Component& c, juce::AccessibilityRole role, ValueAccess access);
+// The keys of a focused value (the screen reader moved the keyboard there): Up / Right and Down / Left a step,
+// Page Up / Down ten, Home / End the ends. False for other keys and a read-only value.
+bool stepValueByKey (juce::Component& c, const juce::KeyPress& key, const ValueAccess& access);
 
 // One drag gesture on a custom-painted control.
 class ValueDrag

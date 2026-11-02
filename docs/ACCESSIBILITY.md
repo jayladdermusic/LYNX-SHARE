@@ -22,6 +22,13 @@ On macOS, Ctrl below means Cmd and Alt means Option. The menus are in the macOS 
 | Alt+Shift+S | Solo the current item |
 | Alt+Shift+Left / Right | Previous / next marker |
 | Alt+Shift+O | Accessibility settings |
+| Alt+Shift+N | Go to the pattern selector; again, back to where you were |
+| Alt+Shift+K | Metronome on / off (also Ctrl+M) |
+| Alt+Shift+U | Count-in on / off (also Ctrl+P) |
+| Alt+Shift+W | Recording waits for the first note on / off (also Ctrl+I) |
+| Alt+Shift+T | Typing keyboard as a piano on / off (also Ctrl+T) |
+| Alt+Shift+D | Split the current pattern by channel |
+| Alt+Shift+L | Link the selected channels to an insert, picked from a list |
 
 Panels are switched with their usual keys: F5 Playlist, F6 Channel Rack, F7 Piano Roll, F9 Mixer, Alt+F8 Browser. The same key on the focused panel hides it. The keyboard focus moves into the panel, and the panel and its current item are read. Moving the VoiceOver cursor into a panel makes it the focused one too.
 
@@ -29,8 +36,10 @@ Panels are switched with their usual keys: F5 Playlist, F6 Channel Rack, F7 Pian
 
 The main window is a list of groups. With VoiceOver, VO+Shift+Down enters a group and VO+Shift+Up leaves it.
 
-- The toolbar groups: Transport, Master volume and pitch, Recording options, Snap and pattern, Window shortcuts, File and undo, CPU, memory and polyphony, and Output monitor. Tempo, master volume, master pitch and the song position are sliders (VO+Up / Down).
+- The toolbar groups: Transport, Master volume and pitch, Recording options, Snap and pattern, Window shortcuts, File and undo, CPU, memory and polyphony, and Output monitor. Tempo, master volume, master pitch and the song position are sliders.
 - One group per open panel, named after it: the panel's keyboard target (its current item), its tools and its title bar buttons.
+
+The keyboard follows the VoiceOver cursor onto the toolbar controls: there the arrows change the slider or combo box (Page Up / Down ten steps, Home / End the ends) and Enter presses a button, while the global keys (Space, the F-keys, Ctrl+S...) still work. The focused panel's key (F5, F9...) brings the keyboard back to it.
 
 ## Playlist
 
@@ -88,7 +97,7 @@ The parameters of a channel list its volume, pan, mute, mixer insert, and every 
 | Enter | Open the effect slot (an empty slot opens the list of effects) |
 | Ctrl+L | Link the selected channels to this insert |
 
-To route a channel to an insert of your choice: select it in the Channel Rack, press F9, go to the insert with Left / Right and press Ctrl+L. (Ctrl+L in the Channel Rack sends the selected channels to free inserts instead.) The channel's parameters (Alt+Shift+V) also have its mixer insert.
+To route a channel to an insert of your choice: select it in the Channel Rack and press Alt+Shift+L to pick the insert from a list, or press F9, go to the insert with Left / Right and press Ctrl+L. (Ctrl+L in the Channel Rack sends the selected channels to free inserts instead.) The channel's parameters (Alt+Shift+V) also have its mixer insert.
 
 The parameters of a mixer track list volume, pan, stereo separation, mute, solo, phase, channel swap and its sends. The parameters of an effect slot list on/off, mix and every parameter of the effect.
 

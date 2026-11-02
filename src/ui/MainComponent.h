@@ -158,6 +158,10 @@ private:
 
     // panels
     void togglePanel (Panel panel);
+    bool toolbarHasKeyboardFocus() const; // (a screen reader's cursor took the keyboard there)
+    void focusWorkspace();                // the keyboard back to the focused panel
+    void togglePatternSelector();         // the keyboard to the pattern box, and back to where it was
+    void showLinkToInsertMenu();          // the selected channels to an insert picked from a list
     void fitChannelRack (bool width); // the Channel Rack pop-up sizes itself to its rows (and steps)
     int fittedChannelCount = -1;
     void showPanel (Panel panel);
@@ -250,6 +254,11 @@ private:
     };
     std::array<ToolbarGroup, toolbarlayout::groupCount> toolbarGroups;
     std::vector<juce::Component*> toolbarControls (toolbarlayout::Group group);
+    // the toolbar controls that take the keyboard only while the screen reader layer is on (so that the keys act on
+    // the control the screen reader's cursor is on); the mouse never moves the keyboard there
+    std::vector<juce::Component*> readerFocusable;
+    bool readerFocusOn = false;
+    juce::Component::SafePointer<juce::Component> beforePatternSelector;
     juce::Rectangle<int> fixedToolbarArea;       // the menu and the hint bar
     void newProject (bool askAlways = false); // File › New: the New project window unless turned off
     void startNewProject (Song song, const juce::File& file);
@@ -331,6 +340,7 @@ private:
     public:
         explicit TempoDisplay (AudioEngine& e) : engine (e) {}
         std::unique_ptr<juce::AccessibilityHandler> createAccessibilityHandler() override;
+        bool keyPressed (const juce::KeyPress& key) override;
         void paint (juce::Graphics& g) override;
         void mouseDown (const juce::MouseEvent& e) override;
         void mouseDrag (const juce::MouseEvent& e) override;
@@ -345,6 +355,7 @@ private:
         bool isOnDecimals (int x) const;
         void setBpm (double bpm);
         ui::ValueSpec spec() const;
+        ui::ValueAccess valueAccess();
         AudioEngine& engine;
         double startBpm = 0.0;
         bool dragOnDecimals = false, dragging = false;

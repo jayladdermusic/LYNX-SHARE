@@ -408,17 +408,26 @@ juce::String AccessLayer::volumeText (int track) const
     return juce::isPositiveAndBelow (track, (int) song.mixer.size()) ? dbText (faderGain (song.mixer[(std::size_t) track].volume)) : juce::String();
 }
 
+juce::String AccessLayer::insertName (int track) const
+{
+    const auto& song = engine.getSong();
+    if (! juce::isPositiveAndBelow (track, (int) song.mixer.size()))
+        return {};
+    const auto& name = song.mixer[(std::size_t) track].name;
+    if (track == 0)
+        return tr ("Master");
+    if (name.empty() || name == "Insert " + std::to_string (track)) // (holds the number already)
+        return tr ("Insert {0}", { juce::String (track) });
+    return settings.reportNumbers ? juce::String (track) + " " + utf8 (name) : utf8 (name);
+}
+
 juce::String AccessLayer::mixerTrackText (int track) const
 {
     const auto& song = engine.getSong();
     if (! juce::isPositiveAndBelow (track, (int) song.mixer.size()))
         return {};
     const auto& m = song.mixer[(std::size_t) track];
-    const auto defaultName = m.name.empty() || m.name == "Insert " + std::to_string (track); // (holds the number already)
-    auto name = track == 0 ? tr ("Master") : defaultName ? tr ("Insert {0}", { juce::String (track) }) : utf8 (m.name);
-    if (track > 0 && ! defaultName && settings.reportNumbers)
-        name = juce::String (track) + " " + name;
-    juce::StringArray parts { name, volumeText (track), panText (m.pan) };
+    juce::StringArray parts { insertName (track), volumeText (track), panText (m.pan) };
     if (m.muted)
         parts.add (tr ("muted"));
     if (m.solo)
@@ -1274,7 +1283,7 @@ void AccessLayer::afterAction (const std::string& id, Context focus)
         if (id == "record.waitForInput")
             return speak (tr ("Wait for input {0}", { onOff (engine.getRecordOptions().waitForInput) }));
     }
-    if (starts ("pattern."))
+    if (starts ("pattern.") && id != "pattern.splitByChannel" && id != "pattern.focusSelector") // (these report themselves)
         return speak (patternName (song, song.currentPattern));
     if (starts ("rack.select") || starts ("rack.extend") || starts ("rack.move") || id == "rack.clone" || id == "rack.deleteSelected"
         || starts ("pianoRoll.previousChannel") || starts ("pianoRoll.nextChannel"))
@@ -1288,7 +1297,7 @@ void AccessLayer::afterAction (const std::string& id, Context focus)
     }
     if (id == "browser.next" || id == "browser.previous" || id == "browser.openFolder" || id == "browser.closeFolder" || starts ("browser.swap"))
         return speak (panels.browser.describeSelection());
-    if (id == "rack.sendToInserts" || id == "mixer.linkChannels" || id == "mixer.linkChannelsFrom") // each channel and its insert
+    if (id == "rack.sendToInserts" || id == "rack.linkToInsert" || id == "mixer.linkChannels" || id == "mixer.linkChannelsFrom") // each channel and its insert
     {
         juce::StringArray linked;
         for (const auto channel : engine.getSelectedChannels())

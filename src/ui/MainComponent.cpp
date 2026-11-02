@@ -40,6 +40,7 @@
 #include "engine/Text.h"
 
 #include "core/MetronomeVoice.h"
+#include "core/MixerOps.h"
 #include "core/RackOps.h"
 #include "core/Templates.h"
 #include "ui/NewProjectDialog.h"
@@ -561,7 +562,11 @@ MainComponent::MainComponent (AudioEngine& e, bool restoreUserSettings)
         box.setTitle (tr (toolbarlayout::groupName ((toolbarlayout::Group) g)));
         addAndMakeVisible (box);
         for (auto* c : toolbarControls ((toolbarlayout::Group) g))
+        {
             box.addChildComponent (c); // (keeps its visibility)
+            if (! c->getWantsKeyboardFocus())
+                readerFocusable.push_back (c);
+        }
     }
     engine.addChangeListener (this);
     setTypingPiano (typingPiano);
@@ -1214,21 +1219,25 @@ bool MainComponent::keyPressed (const juce::KeyPress& key)
         return true;
     }
 
+    // a toolbar control has the keyboard (the screen reader's cursor took it there): the global keys, not the panel's
+    const auto inToolbar = toolbarHasKeyboardFocus();
+    const auto context = inToolbar ? keys::Context::global : focusContext();
+
     // 2. a key the user gave an action himself (Options › Shortcuts) wins over the panels' built-in keys
     // (issue #12: Metronome on 'C' did nothing while the Playlist, whose Knife is 'C', had the focus)
-    if (const auto own = keyMap.findUserBound (chord, focusContext(), typingPiano); ! own.empty() && runKeyAction (own))
+    if (const auto own = keyMap.findUserBound (chord, context, typingPiano); ! own.empty() && runKeyAction (own))
         return true;
 
     const auto focused = workspace.getFocused();
-    const auto panelShown = workspace.isPanelVisible (focused);
+    const auto panelShown = workspace.isPanelVisible (focused) && ! inToolbar;
 
     // 3. the screen reader layer (ui/Accessibility.h): its keys while it is on, and the key that turns it on or off;
     // both come before the panels' own keys (the Piano Roll took Ctrl+Alt+Shift+A as Select all)
     if (access.isOn())
-        if (const auto a = keyMap.findAccess (chord, panelShown ? focusContext() : keys::Context::global, typingPiano); ! a.empty() && runAction (a))
+        if (const auto a = keyMap.findAccess (chord, panelShown ? context : keys::Context::global, typingPiano); ! a.empty() && runAction (a))
             return true;
 
-    const auto action = keyMap.find (chord, focusContext(), typingPiano);
+    const auto action = keyMap.find (chord, context, typingPiano);
     if (action == "access.toggle")
         return runKeyAction (action);
 
@@ -1312,6 +1321,9 @@ bool MainComponent::runAction (const std::string& id)
     else if (is ("pattern.rename")) showRenamePattern (engine.getSong().currentPattern);
     else if (is ("pattern.insert")) insertPatternHere();
     else if (is ("pattern.clone")) clonePatternNow();
+    else if (is ("pattern.splitByChannel")) splitPatternByChannelNow();
+    else if (is ("pattern.focusSelector")) togglePatternSelector();
+    else if (is ("rack.linkToInsert")) showLinkToInsertMenu();
     else if (is ("pattern.moveUp")) movePatternNow (-1);
     else if (is ("pattern.moveDown")) movePatternNow (1);
     else if (id.rfind ("pattern.select", 0) == 0) selectPattern (std::stoi (id.substr (14)) - 1);
@@ -1901,8 +1913,61 @@ void MainComponent::toggleMode()
 
 void MainComponent::togglePanel (Panel panel)
 {
+    // from the toolbar the focused panel's key brings the keyboard back to it instead of hiding it
+    if (workspace.getFocused() == panel && workspace.isPanelVisible (panel) && toolbarHasKeyboardFocus())
+        return focusWorkspace();
+
     workspace.toggle (panel);
     refreshPanelButtons();
+}
+
+bool MainComponent::toolbarHasKeyboardFocus() const
+{
+    const auto* focused = juce::Component::getCurrentlyFocusedComponent();
+    return std::any_of (toolbarGroups.begin(), toolbarGroups.end(), [focused] (const ToolbarGroup& g) { return g.isParentOf (focused); });
+}
+
+void MainComponent::focusWorkspace()
+{
+    if (access.isOn())
+        access.focusPanel (focusContext());
+    else
+        grabKeyboardFocus();
+}
+
+void MainComponent::togglePatternSelector()
+{
+    if (! patternBox.hasKeyboardFocus (false))
+    {
+        beforePatternSelector = juce::Component::getCurrentlyFocusedComponent();
+        patternBox.grabKeyboardFocus();
+    }
+    else if (auto* back = beforePatternSelector.getComponent(); back != nullptr && back->isShowing())
+        back->grabKeyboardFocus();
+    else
+        focusWorkspace();
+}
+
+void MainComponent::showLinkToInsertMenu()
+{
+    const auto& song = engine.getSong();
+    const auto channels = engine.getSelectedChannels();
+    if (channels.empty() || song.mixer.empty())
+        return;
+
+    // the Master, the inserts in use and the first free one after them
+    int last = (int) song.mixer.size() - 1;
+    while (last > 0 && ! song.insertInUse (last))
+        --last;
+    const auto current = juce::isPositiveAndBelow (channels.front(), (int) song.channels.size()) ? song.channels[(std::size_t) channels.front()].mixerTrack : -1;
+
+    juce::PopupMenu menu;
+    for (int t = 0; t <= juce::jmin (last + 1, (int) song.mixer.size() - 1); ++t)
+        menu.addItem (access.insertName (t), true, t == current, [this, channels, t] {
+            engine.editSong ([channels, t] (Song& s) { mixerops::linkChannels (s, channels, t, false); });
+            access.afterAction ("rack.linkToInsert", focusContext());
+        });
+    menu.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (&workspace));
 }
 
 void MainComponent::fitChannelRack (bool width)
@@ -2877,7 +2942,8 @@ juce::PopupMenu MainComponent::makePatternMenu()
     menu.addItem (tr ("Clone") + shortcutText ("pattern.clone"), [this] { clonePatternNow(); });
     menu.addItem (tr ("Move up") + shortcutText ("pattern.moveUp"), index > 0, false, [this] { movePatternNow (-1); });
     menu.addItem (tr ("Move down") + shortcutText ("pattern.moveDown"), index + 1 < (int) song.patterns.size(), false, [this] { movePatternNow (1); });
-    menu.addItem (tr ("Split by channel (one new pattern per channel)"), ! pattern.notes.empty(), false, [this] { splitPatternByChannelNow(); });
+    menu.addItem (tr ("Split by channel (one new pattern per channel)") + shortcutText ("pattern.splitByChannel"), ! pattern.notes.empty(), false,
+                  [this] { splitPatternByChannelNow(); });
     juce::PopupMenu signatures;
 
     for (int beats : { 2, 3, 4, 5, 6, 7, 8, 9, 12 })
@@ -2982,12 +3048,18 @@ void MainComponent::changeListenerCallback (juce::ChangeBroadcaster*)
 
 // --- tempo display -------------------------------------------------------------------------------
 
+ui::ValueAccess MainComponent::TempoDisplay::valueAccess()
+{
+    return { [this] { return engine.getSong().bpm; }, [this] (double v) { return spec().text (v); }, [this] (double v) { setBpm (v); },
+             minTempo, maxTempo, 1.0 };
+}
+
 std::unique_ptr<juce::AccessibilityHandler> MainComponent::TempoDisplay::createAccessibilityHandler()
 {
-    return ui::createValueHandler (*this, juce::AccessibilityRole::slider,
-                                   { [this] { return engine.getSong().bpm; }, [this] (double v) { return spec().text (v); },
-                                     [this] (double v) { setBpm (v); }, minTempo, maxTempo, 1.0 });
+    return ui::createValueHandler (*this, juce::AccessibilityRole::slider, valueAccess());
 }
+
+bool MainComponent::TempoDisplay::keyPressed (const juce::KeyPress& key) { return ui::stepValueByKey (*this, key, valueAccess()); }
 
 ui::ValueSpec MainComponent::TempoDisplay::spec() const
 {
@@ -3299,6 +3371,12 @@ void MainComponent::timerCallback()
         updateRecordQuantise();
     }
     access.update (focusContext());
+    if (access.isOn() != readerFocusOn)
+    {
+        readerFocusOn = access.isOn();
+        for (auto* c : readerFocusable)
+            c->setWantsKeyboardFocus (readerFocusOn);
+    }
 
     if (engine.isModified() != lastModified)
     {
