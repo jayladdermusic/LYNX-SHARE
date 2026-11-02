@@ -65,6 +65,14 @@ public:
 private:
     int getNumRows() override { return (int) shown.size(); }
 
+    juce::String getNameForRow (int row) override
+    {
+        if (row < 0 || row >= (int) shown.size())
+            return {};
+        const auto& e = shown[(std::size_t) row];
+        return e.detail.isEmpty() ? e.name : e.name + ", " + e.detail;
+    }
+
     void paintListBoxItem (int row, juce::Graphics& g, int width, int height, bool selected) override
     {
         if (row < 0 || row >= (int) shown.size())

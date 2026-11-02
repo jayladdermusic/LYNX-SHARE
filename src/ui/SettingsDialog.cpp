@@ -432,12 +432,21 @@ private:
             g.setColour (theme::colour::accentMuted);
             g.fillRect (0, 0, width, height);
         }
-        const auto exists = ! check || juce::File (folders[row]).isDirectory();
+        const auto exists = folderExists (row);
         g.setFont (theme::font (theme::type::body));
         g.setColour (exists ? theme::colour::textPrimary : theme::colour::warning);
         g.drawText (folders[row] + (exists ? juce::String() : "  (" + tr ("not found") + ")"), 10, 0, width - 20, height,
                     juce::Justification::centredLeft, true);
     }
+
+    juce::String getNameForRow (int row) override
+    {
+        if (folders.isEmpty())
+            return tr ("(none yet)");
+        return folders[row] + (folderExists (row) ? juce::String() : ", " + tr ("not found"));
+    }
+
+    bool folderExists (int row) const { return ! check || juce::File (folders[row]).isDirectory(); }
 
     void selectedRowsChanged (int) override { refresh(); }
 

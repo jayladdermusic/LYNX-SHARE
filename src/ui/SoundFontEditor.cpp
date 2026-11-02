@@ -366,6 +366,17 @@ private:
             g.drawFittedText (u8 (r.name), area, juce::Justification::centredLeft, 1, 0.75f);
     }
 
+    juce::String getNameForRow (int row) override
+    {
+        if (row < 0 || row >= (int) rows.size())
+            return {};
+        const auto& r = rows[(std::size_t) row];
+        juce::StringArray parts { u8 (r.name), juce::String::formatted ("%03d:%03d", r.bank, r.program), showFont ? u8 (r.font) : juce::String(),
+                                  categoryText (r.category) };
+        parts.removeEmptyStrings();
+        return parts.joinIntoString (", ");
+    }
+
     void listBoxItemClicked (int row, const juce::MouseEvent& e) override
     {
         if (row < 0 || row >= (int) rows.size())

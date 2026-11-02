@@ -1415,6 +1415,19 @@ private:
     // the project's links, then the global ones (settings; FL's "Override global link...", REA round 146)
     int linkRows() const { return (int) (engine.getSong().midiLinks.size() + engine.getGlobalLinks().size()); }
 
+    // A row of the links list: its source ("CC 7 · ch. 1") and what it controls; empty when there is no such row.
+    std::pair<juce::String, juce::String> linkRow (int row) const
+    {
+        const auto& project = engine.getSong().midiLinks;
+        const auto global = engine.getGlobalLinks();
+        const auto isProject = row < (int) project.size();
+        if (row < 0 || row >= (int) (project.size() + global.size()))
+            return {};
+        const auto& link = isProject ? project[(std::size_t) row] : global[(std::size_t) row - project.size()];
+        const auto source = "CC " + juce::String (link.cc) + (link.channel >= 0 ? juce::String::fromUTF8 (" \xc2\xb7 ") + tr ("ch. {0}", { juce::String (link.channel + 1) }) : juce::String());
+        return { source, describeAutomationTarget (engine, link.target) + (isProject ? juce::String() : "  (" + tr ("global") + ")") };
+    }
+
     void rebuildInputs()
     {
         rows.clear();
@@ -1504,11 +1517,8 @@ private:
 
     void paintListBoxItem (int row, juce::Graphics& g, int width, int height, bool selected) override
     {
-        auto list = engine.getSong().midiLinks;
-        const auto projectLinks = (int) list.size();
-        for (const auto& l : engine.getGlobalLinks())
-            list.push_back (l);
-        if (list.empty() || row >= (int) list.size())
+        const auto [source, target] = linkRow (row);
+        if (source.isEmpty())
         {
             g.setFont (theme::font (theme::type::small));
             g.setColour (theme::colour::textDisabled);
@@ -1520,14 +1530,17 @@ private:
             g.setColour (theme::colour::accentMuted);
             g.fillRect (0, 0, width, height);
         }
-        const auto& link = list[(std::size_t) row];
         g.setFont (theme::font (theme::type::body));
         g.setColour (theme::colour::info);
-        const auto source = "CC " + juce::String (link.cc) + (link.channel >= 0 ? juce::String::fromUTF8 (" \xc2\xb7 ") + tr ("ch. {0}", { juce::String (link.channel + 1) }) : juce::String());
         g.drawText (source, 10, 0, 110, height, juce::Justification::centredLeft);
         g.setColour (theme::colour::textPrimary);
-        g.drawText (describeAutomationTarget (engine, link.target) + (row >= projectLinks ? "  (" + tr ("global") + ")" : juce::String()), 124, 0,
-                    width - 134, height, juce::Justification::centredLeft, true);
+        g.drawText (target, 124, 0, width - 134, height, juce::Justification::centredLeft, true);
+    }
+
+    juce::String getNameForRow (int row) override
+    {
+        const auto [source, target] = linkRow (row);
+        return source.isEmpty() ? tr ("(none yet)") : source + ", " + target;
     }
 
     void selectedRowsChanged (int) override { removeLink.setEnabled (links.getSelectedRow() >= 0 && linkRows() > 0); }

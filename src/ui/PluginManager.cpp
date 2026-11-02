@@ -53,6 +53,13 @@ std::vector<prefs::PluginRow> sampleRows()
     };
 }
 
+// A table whose rows a screen reader reads by `rowName` (JUCE's own table names them "Row 1", "Row 2"...)
+struct NamedRowsTable final : juce::TableListBox
+{
+    std::function<juce::String (int row)> rowName;
+    juce::String getNameForRow (int row) override { return rowName != nullptr ? rowName (row) : juce::String(); }
+};
+
 class PluginManagerPanel final : public juce::Component,
                                  private juce::TableListBoxModel,
                                  private juce::Timer
@@ -106,6 +113,7 @@ public:
         header.setColour (juce::TableHeaderComponent::textColourId, theme::colour::textSecondary);
         header.setColour (juce::TableHeaderComponent::outlineColourId, theme::colour::border);
         table.setModel (this);
+        table.rowName = [this] (int row) { return rowName (row); };
         table.setRowHeight (26);
         table.setHeaderHeight (26);
         table.setMultipleSelectionEnabled (false);
@@ -260,6 +268,22 @@ private:
 
     // --- table -------------------------------------------------------------------------------------------------
     int getNumRows() override { return (int) visible.size(); }
+
+    juce::String rowName (int row) const
+    {
+        const auto* r = rowAt (row);
+        if (r == nullptr)
+            return {};
+        juce::StringArray parts { u8 (r->name), u8 (r->vendor) };
+        if (r->status != prefs::PluginStatus::failed)
+            parts.add (r->instrument ? tr ("Instrument") : tr ("Effect"));
+        parts.add (u8 (r->format));
+        parts.add (statusText (r->status));
+        if (r->favourite)
+            parts.add (tr ("Favourite"));
+        parts.removeEmptyStrings();
+        return parts.joinIntoString (", ");
+    }
 
     void paintRowBackground (juce::Graphics& g, int row, int, int, bool selected) override
     {
@@ -476,7 +500,7 @@ private:
     juce::TextEditor search;
     std::array<juce::TextButton, 5> filterButtons;
     juce::Label count, scanStatus, emptyHint;
-    juce::TableListBox table;
+    NamedRowsTable table;
     juce::ProgressBar progress { progressValue };
     juce::TextButton scanNew { tr ("Find new plugins") }, rescanAll { tr ("Rescan all...") }, stop { tr ("Stop") },
         foldersButton { tr ("Plugin folders...") }, addFile { tr ("Add plugin file...") };

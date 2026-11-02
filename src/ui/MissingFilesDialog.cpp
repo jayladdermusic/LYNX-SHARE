@@ -321,9 +321,34 @@ private:
             g.fillRect (0, 0, width, height);
         }
 
+        const auto [dot, name, right, detail, detailColour] = rowLook (row);
+
+        g.setColour (dot);
+        g.fillEllipse (14.0f, 12.0f, 8.0f, 8.0f);
+
+        const auto rightWidth = juce::jmin (width / 3, juce::GlyphArrangement::getStringWidthInt (juce::Font (theme::font (theme::type::small)), right) + 8);
+        g.setFont (theme::font (theme::type::body, true));
+        g.setColour (theme::colour::textPrimary);
+        g.drawText (name, 32, 5, width - 44 - rightWidth, 18, juce::Justification::centredLeft, true);
+        g.setFont (theme::font (theme::type::small));
+        g.setColour (theme::colour::textSecondary);
+        g.drawText (right, width - 12 - rightWidth, 5, rightWidth, 18, juce::Justification::centredRight, true);
+        g.setColour (detailColour);
+        g.drawText (detail, 32, 24, width - 44, 16, juce::Justification::centredLeft, true);
+    }
+
+    // a row's name, users (on the right), detail line, and their colours
+    struct RowLook
+    {
         juce::Colour dot;
         juce::String name, right, detail;
         juce::Colour detailColour = theme::colour::textDisabled;
+    };
+
+    RowLook rowLook (int row) const
+    {
+        RowLook look;
+        auto& [dot, name, right, detail, detailColour] = look;
 
         if (page == Page::samples)
         {
@@ -371,19 +396,17 @@ private:
             name = u8 (pathFileName (to));
             detail = u8 (from) + juce::String::fromUTF8 ("  \xe2\x86\x92  ") + u8 (to);
         }
+        return look;
+    }
 
-        g.setColour (dot);
-        g.fillEllipse (14.0f, 12.0f, 8.0f, 8.0f);
-
-        const auto rightWidth = juce::jmin (width / 3, juce::GlyphArrangement::getStringWidthInt (juce::Font (theme::font (theme::type::small)), right) + 8);
-        g.setFont (theme::font (theme::type::body, true));
-        g.setColour (theme::colour::textPrimary);
-        g.drawText (name, 32, 5, width - 44 - rightWidth, 18, juce::Justification::centredLeft, true);
-        g.setFont (theme::font (theme::type::small));
-        g.setColour (theme::colour::textSecondary);
-        g.drawText (right, width - 12 - rightWidth, 5, rightWidth, 18, juce::Justification::centredRight, true);
-        g.setColour (detailColour);
-        g.drawText (detail, 32, 24, width - 44, 16, juce::Justification::centredLeft, true);
+    juce::String getNameForRow (int row) override
+    {
+        if (row < 0 || row >= getNumRows())
+            return {};
+        const auto look = rowLook (row);
+        juce::StringArray parts { look.name, look.detail, look.right };
+        parts.removeEmptyStrings();
+        return parts.joinIntoString (", ");
     }
 
     void selectedRowsChanged (int) override { refresh(); }

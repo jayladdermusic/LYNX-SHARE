@@ -578,13 +578,27 @@ private:
         g.setColour (theme::colour::textPrimary);
         g.setFont (theme::font (theme::type::body, current));
         g.drawText (juce::String::fromUTF8 (song.arrangements[(std::size_t) row].name.c_str()), 12, 0, width - 160, height, juce::Justification::centredLeft, true);
+        g.setColour (theme::colour::textSecondary);
+        g.setFont (theme::font (theme::type::small));
+        g.drawText (contentsOf (row), width - 150, 0, 140, height, juce::Justification::centredRight);
+    }
+
+    juce::String getNameForRow (int row) override
+    {
+        const auto& song = engine.getSong();
+        if (row < 0 || row >= (int) song.arrangements.size())
+            return {};
+        return juce::String::fromUTF8 (song.arrangements[(std::size_t) row].name.c_str()) + (row == song.currentArrangement ? ", " + tr ("current") : juce::String())
+               + ", " + contentsOf (row);
+    }
+
+    juce::String contentsOf (int row) const // "12 clips, 8 bars"
+    {
+        const auto& song = engine.getSong();
         const auto bar = (std::int64_t) ppq * juce::jmax (1, song.beatsPerBar);
         const auto bars = (arrangeops::lengthOf (song, row) + bar - 1) / bar;
         const auto clips = (int) arrangeops::clipsOf (song, row).size();
-        g.setColour (theme::colour::textSecondary);
-        g.setFont (theme::font (theme::type::small));
-        g.drawText (tr ("{0} clips, {1} bars", { juce::String (clips), juce::String ((int) bars) }), width - 150, 0, 140, height,
-                    juce::Justification::centredRight);
+        return tr ("{0} clips, {1} bars", { juce::String (clips), juce::String ((int) bars) });
     }
 
     void listBoxItemDoubleClicked (int row, const juce::MouseEvent&) override

@@ -299,6 +299,8 @@ private:
         g.drawText (folderList[row], 8, 0, width - 16, height, juce::Justification::centredLeft, true);
     }
 
+    juce::String getNameForRow (int row) override { return folderList[row]; }
+
     void chooseFolder()
     {
         chooser = std::make_unique<juce::FileChooser> (tr ("Plugin folder"), juce::File(), "");

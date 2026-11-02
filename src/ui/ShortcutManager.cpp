@@ -322,6 +322,18 @@ private:
 
     int getNumRows() override { return (int) visible.size(); }
 
+    juce::String getNameForRow (int row) override
+    {
+        if (! juce::isPositiveAndBelow (row, (int) visible.size()))
+            return {};
+        const auto& a = keys::actions()[(std::size_t) visible[(std::size_t) row]];
+        juce::StringArray keysText;
+        for (const auto& c : map.chordsFor (a.id))
+            keysText.add (chordText (c));
+        return tr (a.description) + ", " + (keysText.isEmpty() ? tr ("(no shortcut)") : keysText.joinIntoString (", ")) + ", "
+               + contextName (a.context);
+    }
+
     void paintListBoxItem (int row, juce::Graphics& g, int width, int height, bool selected) override
     {
         if (! juce::isPositiveAndBelow (row, (int) visible.size()))

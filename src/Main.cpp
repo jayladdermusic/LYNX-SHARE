@@ -3098,9 +3098,12 @@ private:
                         auto* transport = findChild (root, tr ("Transport"));
                         check ("screen reader: the Transport group holds its controls", transport != nullptr && transport->getChildren().size() == 8);
                         auto* tempo = transport != nullptr ? findChild (*transport, tr ("Tempo (BPM)")) : nullptr;
+                        check ("project: unchanged after the layer and moving between panels (New asks to save only after a change)",
+                               ! engine->isModified());
                         check ("toolbar: the tempo takes the keyboard, Up raises it",
                                tempo != nullptr && tempo->getComponent().getWantsKeyboardFocus()
                                    && tempo->getComponent().keyPressed (juce::KeyPress (juce::KeyPress::upKey)) && engine->getSong().bpm == 131.0);
+                        engine->markSaved();
                         auto* playlistGroup = findChild (root, tr ("Playlist"));
                         check ("screen reader: the Playlist group holds its title bar and tools",
                                playlistGroup != nullptr && findChild (*playlistGroup, tr ("Close")) != nullptr
@@ -3123,6 +3126,7 @@ private:
                         check ("Playlist: Tab on an empty track", spoken() == tr ("No clips on this track"));
                         press (juce::KeyPress::rightKey, juce::ModifierKeys::altModifier);
                         check ("Playlist: Alt+Right, the next bar", spoken() == tr ("Bar {0} beat {1}", { "2", "1" }));
+                        check ("project: moving around the Playlist changes nothing", ! engine->isModified());
                         press (juce::KeyPress::F9Key);
                         break;
                     case 2:

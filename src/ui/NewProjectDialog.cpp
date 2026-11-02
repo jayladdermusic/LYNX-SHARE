@@ -98,6 +98,14 @@ public:
 
     int getNumRows() override { return (int) items.size(); }
 
+    juce::String getNameForRow (int row) override
+    {
+        if (row < 0 || row >= (int) items.size())
+            return {};
+        const auto& item = items[(std::size_t) row];
+        return item.description.isEmpty() ? item.name : item.name + ", " + item.description;
+    }
+
     void paintListBoxItem (int row, juce::Graphics& g, int width, int height, bool selected) override
     {
         if (row < 0 || row >= (int) items.size())
@@ -184,8 +192,7 @@ public:
         addAndMakeVisible (folderValue);
         chooseFolder.onClick = [this] { pickFolder(); };
         addAndMakeVisible (chooseFolder);
-        saveNow.setButtonText (tr ("Save it there now"));
-        saveNow.setTooltip (tr ("Off: the project opens unsaved and asks where to go when you first save"));
+        saveNow.setButtonText (tr ("Save in this folder now"));
         saveNow.setToggleState (persistent ? remembered.folder.isNotEmpty() : true, juce::dontSendNotification);
         saveNow.onClick = [this] { updatePath(); };
         addAndMakeVisible (saveNow);

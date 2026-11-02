@@ -75,6 +75,11 @@ private:
 
     int getNumRows() override { return labels.size(); }
 
+    juce::String getNameForRow (int row) override
+    {
+        return labels[row] + (row == position ? ", " + tr ("current") : row > position ? ", " + tr ("undone") : juce::String());
+    }
+
     void paintListBoxItem (int row, juce::Graphics& g, int width, int height, bool) override
     {
         const auto current = row == position;

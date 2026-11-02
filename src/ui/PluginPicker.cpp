@@ -187,14 +187,32 @@ public:
             g.setColour (favourite ? theme::colour::accent : theme::colour::textDisabled.withAlpha (0.5f));
             g.setFont (theme::font (theme::type::body));
             textcache::drawText (g, star, juce::Rectangle<int> (0, 0, starWidth, height), juce::Justification::centred);
-            const juce::String cells[] = { juce::String::fromUTF8 (e.shownName().c_str()), juce::String::fromUTF8 (e.vendor.c_str()),
-                                           juce::String::fromUTF8 (e.format.c_str()), tr (juce::String (plugincatalog::categoryOf (e))) };
+            const auto cells = cellsOf (e);
             for (int i = 0; i < 4; ++i)
             {
                 g.setColour (i == 0 ? theme::colour::textPrimary : theme::colour::textSecondary);
                 g.setFont (theme::font (i == 0 ? theme::type::body : theme::type::small));
                 textcache::drawText (g, cells[i], column (i, width, height), juce::Justification::centredLeft, true);
             }
+        }
+
+        juce::String getNameForRow (int row) override
+        {
+            if (picker == nullptr || row < 0 || row >= (int) picker->shown.size())
+                return {};
+            const auto& e = picker->entries[(std::size_t) picker->shown[(std::size_t) row]];
+            auto cells = cellsOf (e);
+            cells.removeEmptyStrings();
+            if (picker->isFavourite (e.id))
+                cells.add (tr ("Favourite"));
+            return cells.joinIntoString (", ");
+        }
+
+        // name, vendor, format, category
+        static juce::StringArray cellsOf (const plugincatalog::Entry& e)
+        {
+            return { juce::String::fromUTF8 (e.shownName().c_str()), juce::String::fromUTF8 (e.vendor.c_str()), juce::String::fromUTF8 (e.format.c_str()),
+                     tr (juce::String (plugincatalog::categoryOf (e))) };
         }
 
         void listBoxItemClicked (int row, const juce::MouseEvent& e) override
@@ -247,7 +265,7 @@ private:
             {
                 g.setColour (theme::colour::textDisabled);
                 g.setFont (theme::font (theme::type::caption, true));
-                textcache::drawText (g, tr (juce::String (r.value)).toUpperCase(), juce::Rectangle<int> (8, 0, width - 12, height),
+                textcache::drawText (g, nameOf (r).toUpperCase(), juce::Rectangle<int> (8, 0, width - 12, height),
                                      juce::Justification::bottomLeft);
                 return;
             }
@@ -259,15 +277,7 @@ private:
                 g.setColour (theme::colour::accent);
                 g.fillRect (0, 0, 2, height);
             }
-            juce::String name;
-            switch (r.kind)
-            {
-                case Group::Kind::all: name = tr ("All"); break;
-                case Group::Kind::favourites: name = star + " " + tr ("Favourites"); break;
-                case Group::Kind::category: name = tr (juce::String (r.value)); break;
-                case Group::Kind::vendor: name = juce::String::fromUTF8 (r.value.c_str()); break;
-                case Group::Kind::heading: break;
-            }
+            const auto name = (r.kind == Group::Kind::favourites ? star + " " : juce::String()) + nameOf (r);
             const auto indent = r.kind == Group::Kind::vendor || r.kind == Group::Kind::category ? 16 : 8;
             g.setColour (r.count == 0 ? theme::colour::textDisabled : theme::colour::textPrimary);
             g.setFont (theme::font (theme::type::body, selected));
@@ -275,6 +285,27 @@ private:
             g.setColour (theme::colour::textDisabled);
             g.setFont (theme::font (theme::type::caption));
             textcache::drawText (g, juce::String (r.count), juce::Rectangle<int> (width - 40, 0, 32, height), juce::Justification::centredRight);
+        }
+
+        juce::String getNameForRow (int row) override
+        {
+            if (rows == nullptr || row < 0 || row >= (int) rows->size())
+                return {};
+            const auto& r = (*rows)[(std::size_t) row];
+            return r.kind == Group::Kind::heading ? nameOf (r) : nameOf (r) + ", " + juce::String (r.count);
+        }
+
+        static juce::String nameOf (const Group& r)
+        {
+            switch (r.kind)
+            {
+                case Group::Kind::all: return tr ("All");
+                case Group::Kind::favourites: return tr ("Favourites");
+                case Group::Kind::category:
+                case Group::Kind::heading: return tr (juce::String (r.value));
+                case Group::Kind::vendor: return juce::String::fromUTF8 (r.value.c_str());
+            }
+            return {};
         }
 
         void listBoxItemClicked (int row, const juce::MouseEvent&) override
