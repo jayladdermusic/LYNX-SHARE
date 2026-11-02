@@ -67,6 +67,18 @@ SongPositionBar::SongPositionBar (AudioEngine& e) : engine (e)
 double SongPositionBar::length() const { return loopLength (engine.getSong()); }
 double SongPositionBar::position() const { return playheadTicks (engine); }
 
+std::unique_ptr<juce::AccessibilityHandler> SongPositionBar::createAccessibilityHandler()
+{
+    // the position as a fraction of the song (or pattern), read as bar : beat : step
+    return ui::createValueHandler (*this, juce::AccessibilityRole::slider,
+                                   { [this] { return position() / length(); },
+                                     [this] (double fraction) { return barBeatStep (engine.getSong(), fraction * length(), engine.getTransport().beatsPerBar.load()); },
+                                     [this] (double fraction) {
+                                         engine.seek (juce::jlimit (0.0, length() - 1.0, std::round (fraction * length() / ticksPerStep) * ticksPerStep));
+                                         update();
+                                     } });
+}
+
 juce::Rectangle<float> SongPositionBar::track() const
 {
     return getLocalBounds().toFloat().reduced (5.0f, 0.0f).withSizeKeepingCentre ((float) getWidth() - 10.0f, 4.0f);
@@ -173,6 +185,11 @@ ui::Hint SongPositionBar::hintAt (juce::Point<int>)
 
 // --- time display --------------------------------------------------------------------------------
 
+std::unique_ptr<juce::AccessibilityHandler> TimeDisplay::createAccessibilityHandler()
+{
+    return ui::createValueHandler (*this, juce::AccessibilityRole::staticText, { [] { return 0.0; }, [this] (double) { return text(); } });
+}
+
 juce::String TimeDisplay::text() const
 {
     const auto& song = engine.getSong();
@@ -272,6 +289,14 @@ ui::Hint TimeDisplay::hintAt (juce::Point<int>)
 MasterKnob::MasterKnob (AudioEngine& e, Kind k) : engine (e), kind (k)
 {
     setRepaintsOnMouseActivity (true);
+}
+
+std::unique_ptr<juce::AccessibilityHandler> MasterKnob::createAccessibilityHandler()
+{
+    const auto s = spec();
+    return ui::createValueHandler (*this, juce::AccessibilityRole::slider,
+                                   { [this] { return value(); }, [this] (double v) { return spec().text (v); }, [this] (double v) { setValue (v); },
+                                     s.minimum, s.maximum, kind == Kind::pitch ? 10.0 : 0.0 }); // (pitch: 10 cents a step)
 }
 
 bool MasterKnob::available() const

@@ -63,10 +63,22 @@ public:
         ui::setQuickTip (closeButton, tr ("Close"));
         setWantsKeyboardFocus (false);
         setMouseClickGrabsKeyboardFocus (false);
+        setFocusContainerType (FocusContainerType::focusContainer); // a screen reader's group: the title bar and the panel
         // paints every pixel: the panels it covers (a maximised Mixer over the Playlist, a floating Piano roll)
         // are not painted under it (round 151: the hidden Playlist cost 13-19 ms a frame behind the Mixer)
         setOpaque (true);
         refreshButtons();
+    }
+
+    std::unique_ptr<juce::AccessibilityHandler> createAccessibilityHandler() override
+    {
+        struct Group final : juce::AccessibilityHandler
+        {
+            explicit Group (PanelFrame& f) : juce::AccessibilityHandler (f, juce::AccessibilityRole::group), frame (f) {}
+            juce::String getTitle() const override { return tr (frame.title); }
+            PanelFrame& frame;
+        };
+        return std::make_unique<Group> (*this);
     }
 
     ~PanelFrame() override

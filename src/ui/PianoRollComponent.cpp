@@ -119,6 +119,7 @@ PianoRollComponent::PianoRollComponent (AudioEngine& e)
     };
     addAndMakeVisible (tools);
 
+    channelBox.setTitle (tr ("Channel"));
     channelBox.setTooltip (tr ("Channel being edited (marked: has notes in this pattern); \"All\" at the top edits every channel's notes at once. Wheel: channels with notes; Ctrl+wheel: all"));
     channelBox.setWantsKeyboardFocus (false);
     channelBox.setMouseClickGrabsKeyboardFocus (false);
@@ -144,6 +145,7 @@ PianoRollComponent::PianoRollComponent (AudioEngine& e)
     ghostButton.setOnColour (theme::colour::bg6);
     ghostButton.setIconColourWhenOn (theme::colour::textPrimary);
     ghostButton.setFlat (true);
+    ghostButton.setTitle (tr ("Ghost notes"));
     ghostButton.setTooltip (tr ("Ghost notes: show the other channels' notes (Alt+V) and, outlined, this channel's notes in the clips "
                                 "playing at the same time; double right-click one to edit its channel; Ctrl+Alt+V makes them editable"));
     ui::setQuickTip (ghostButton, tr ("Ghost notes"), "Alt+V");
@@ -158,12 +160,14 @@ PianoRollComponent::PianoRollComponent (AudioEngine& e)
     };
 
     moreButton.setFlat (true);
+    moreButton.setTitle (tr ("Note operations"));
     moreButton.setTooltip (tr ("Note operations, left-edge resizing and MIDI import/export"));
     moreButton.onClick = [this] { showMoreMenu(); };
 
     scaleSnapButton.setOnColour (theme::colour::bg6);
     scaleSnapButton.setIconColourWhenOn (theme::colour::accent);
     scaleSnapButton.setFlat (true);
+    scaleSnapButton.setTitle (tr ("Snap to the scale"));
     scaleSnapButton.setTooltip (tr ("Snap notes to the scale: new and moved notes, and incoming MIDI, land on the chosen scale"));
     scaleSnapButton.onClick = [this] { setScaleSnap (! scaleSnap); };
 
@@ -173,6 +177,7 @@ PianoRollComponent::PianoRollComponent (AudioEngine& e)
     followButton.setFlat (true);
     followButton.setClickingTogglesState (false);
     followButton.setToggleState (EditorGlobals::get().isFollowing (true), juce::dontSendNotification);
+    followButton.setTitle (tr ("Follow the playhead"));
     followButton.setTooltip (tr ("Follow: the Piano Roll scrolls along with the playhead while this pattern plays; off, you can look around freely"));
     ui::setQuickTip (followButton, tr ("Follow the playhead"));
     followButton.onClick = [this] { runAction ("pianoRoll.follow"); };
@@ -187,6 +192,7 @@ PianoRollComponent::PianoRollComponent (AudioEngine& e)
     for (int i = 0; i < (int) chords().size(); ++i)
         chordBox.addItem (tr (chords()[(std::size_t) i].name), i + 1);
     chordBox.setSelectedId (1, juce::dontSendNotification);
+    chordBox.setTitle (tr ("Chord"));
     chordBox.setTooltip (tr ("Clicking creates this chord (the clicked note is the root)"));
 
     // scale: root x type
@@ -203,6 +209,7 @@ PianoRollComponent::PianoRollComponent (AudioEngine& e)
     }
     scaleBox.setSelectedId (1, juce::dontSendNotification);
     scaleSnapButton.setEnabled (false); // until a scale is chosen
+    scaleBox.setTitle (tr ("Scale"));
     scaleBox.setTooltip (tr ("Highlights the notes of a scale"));
 
     slideButton.setClickingTogglesState (true);
@@ -245,6 +252,7 @@ PianoRollComponent::PianoRollComponent (AudioEngine& e)
     laneBox.addItem (tr ("Velocity"), 1);
     laneBox.addItem (tr ("Pan"), 2);
     laneBox.addItem (tr ("Fine pitch"), 3);
+    laneBox.setTitle (tr ("Bottom lane"));
     laneBox.setTooltip (tr ("What the bottom lane edits"));
     laneBox.setSelectedId (1, juce::dontSendNotification);
     laneBox.setWantsKeyboardFocus (false);

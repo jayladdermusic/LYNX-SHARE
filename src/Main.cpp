@@ -3029,8 +3029,34 @@ private:
             bool ok = true;
             int stepIndex = 0;
             std::unique_ptr<lynx::AudioEngine> engine;
+            juce::Component window; // a native window that is never shown: the screen reader's tree needs one
             std::unique_ptr<lynx::MainComponent> ui;
             std::function<void()> done;
+
+            // The tree a screen reader gets, one element a line (role number, name, value), indented by nesting; counts
+            // the elements without a name (a scroll bar or a text needs none).
+            static void writeTree (juce::AccessibilityHandler& parent, int depth, juce::String& out, int& unnamed)
+            {
+                for (auto* child : parent.getChildren())
+                {
+                    const auto role = child->getRole();
+                    const auto* value = child->getValueInterface();
+                    out << juce::String::repeatedString ("  ", depth) << (int) role << " \"" << child->getTitle() << "\""
+                        << (value != nullptr ? " = " + value->getCurrentValueAsString() : juce::String()) << "\n";
+                    if (child->getTitle().isEmpty() && role != juce::AccessibilityRole::scrollBar && role != juce::AccessibilityRole::staticText
+                        && role != juce::AccessibilityRole::label)
+                        ++unnamed;
+                    writeTree (*child, depth + 1, out, unnamed);
+                }
+            }
+
+            static juce::AccessibilityHandler* findChild (juce::AccessibilityHandler& parent, const juce::String& title)
+            {
+                for (auto* child : parent.getChildren())
+                    if (child->getTitle() == title)
+                        return child;
+                return nullptr;
+            }
 
             void check (const juce::String& what, bool passed)
             {
@@ -3050,6 +3076,7 @@ private:
                 {
                     case 0:
                     {
+
                         const juce::Component* transport = nullptr;
                         for (auto* c : ui->getChildren())
                             if (c->getTitle() == tr ("Transport"))
@@ -3062,6 +3089,20 @@ private:
                         break;
                     }
                     case 1:
+                    {
+                        auto& root = *window.getAccessibilityHandler();
+                        juce::String tree;
+                        int unnamed = 0;
+                        writeTree (root, 0, tree, unnamed);
+                        juce::File (reportPath).withFileExtension ("tree.txt").replaceWithText (tree);
+                        const auto* transport = findChild (root, tr ("Transport"));
+                        check ("screen reader: the Transport group holds its controls", transport != nullptr && transport->getChildren().size() == 8);
+                        auto* playlistGroup = findChild (root, tr ("Playlist"));
+                        check ("screen reader: the Playlist group holds its title bar and tools",
+                               playlistGroup != nullptr && findChild (*playlistGroup, tr ("Close")) != nullptr
+                                   && findChild (*playlistGroup, tr ("Follow the playhead")) != nullptr);
+                        check ("screen reader: every control has a name (" + juce::String (unnamed) + " without)", unnamed == 0);
+                    }
                         check ("Playlist: named when it has the focus", spoken().startsWith (tr ("Playlist") + ", " + tr ("Track {0}", { "1" })));
                         press (juce::KeyPress::downKey);
                         check ("Playlist: Down reads the next track and its clips", spoken() == tr ("Track {0}", { "2" }) + ", " + tr ("{0} clips", { "2" }));
@@ -3086,6 +3127,9 @@ private:
                         check ("Mixer: Right, the next insert", spoken().startsWith (tr ("Insert {0}", { "1" }) + ", "));
                         press (juce::KeyPress::upKey);
                         check ("Mixer: Up raises the volume", spoken() == tr ("{0} dB", { "1.0" }));
+                        press (juce::KeyPress::rightKey);
+                        press ('l', juce::ModifierKeys::commandModifier);
+                        check ("Mixer: Ctrl+L links the selected channel to this insert", spoken().endsWith (tr ("insert {0}", { "2" })));
                         press (juce::KeyPress::tabKey);
                         check ("Mixer: Tab, the first effect slot", spoken() == tr ("Slot {0}", { "1" }) + ", " + tr ("empty"));
                         press (juce::KeyPress::F7Key);
@@ -3113,6 +3157,9 @@ private:
         test->ui = std::make_unique<lynx::MainComponent> (*test->engine, false); // default layout and keys, nothing saved
         test->ui->setSize (1280, 720);
         test->ui->showDesktopForSnapshot (true);
+        test->window.setBounds (-4000, -4000, 1280, 720); // (hidden, and off screen too)
+        test->window.addAndMakeVisible (*test->ui);
+        test->window.addToDesktop (0);
         test->engine->editSong ([] (lynx::Song& s) { // two clips on the second track, at bars 1 and 5
             for (const auto bar : { 0, 4 })
             {

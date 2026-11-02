@@ -1,6 +1,7 @@
 #pragma once
 
 #include <functional>
+#include <memory>
 #include <optional>
 
 #include <juce_gui_basics/juce_gui_basics.h>
@@ -48,6 +49,17 @@ juce::String utilityVolumeText (double volume);
 // typed one (searches the range in fine steps, so it also works for non-linear curves).
 std::function<std::optional<double> (const juce::String&)> inverseOf (std::function<juce::String (double)> toText, double minimum,
                                                                       double maximum);
+
+// What a screen reader gets from a custom-painted value (the name is the component's title): the value as text and,
+// with `set`, VoiceOver's increment and decrement by `step` (0: a hundredth of the range).
+struct ValueAccess
+{
+    std::function<double()> get;
+    std::function<juce::String (double)> text;
+    std::function<void (double)> set; // empty: read only
+    double minimum = 0.0, maximum = 1.0, step = 0.0;
+};
+std::unique_ptr<juce::AccessibilityHandler> createValueHandler (juce::Component& c, juce::AccessibilityRole role, ValueAccess access);
 
 // One drag gesture on a custom-painted control.
 class ValueDrag

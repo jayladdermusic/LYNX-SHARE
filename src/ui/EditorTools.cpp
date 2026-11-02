@@ -322,6 +322,7 @@ juce::String describe (const Option& option)
 SnapBox::SnapBox (bool isEditor) : editor (isEditor)
 {
     setScrollWheelEnabled (true);
+    setTitle (tr ("Snap"));
 }
 
 ui::Hint SnapBox::hintAt (juce::Point<int>)

@@ -6779,13 +6779,21 @@ TEST (workflow_split_pattern_by_channel)
     song.channels[2].colour = 0xff112233;
     lynx::Clip clip;
     clip.pattern = 0;
+    clip.track = 3;
+    clip.start = 4 * lynx::ppq;
     song.playlist = { clip };
     const auto created = lynx::splitPatternByChannel (song, 0);
     CHECK (created == 2 && song.patterns.size() == 3);
     CHECK (song.patterns[0].notes.size() == 4); // the original is unchanged
     CHECK (song.patterns[1].name == "Beat - " + song.channels[0].name && song.patterns[1].notes.size() == 2);
     CHECK (song.patterns[2].colour == 0xff112233u && song.patterns[2].notes.size() == 2 && song.patterns[2].notes[0].channel == 2);
-    CHECK (song.playlist[0].pattern == 0);
+    // its clip became one clip per channel, on its track and the next, at the same time
+    CHECK (song.playlist.size() == 2 && song.playlist[0].pattern == 1 && song.playlist[0].track == 3 && song.playlist[1].pattern == 2
+           && song.playlist[1].track == 4 && song.playlist[1].start == 4 * lynx::ppq);
+    // a pattern not in the Playlist: its parts start the song, below the last used track
+    CHECK (lynx::splitPatternByChannel (song, 0) == 2 && song.playlist.size() == 4);
+    CHECK (song.playlist[0].pattern == 1 && song.playlist[0].track == 5 && song.playlist[0].start == 0 && song.playlist[1].track == 6);
+    CHECK (song.playlist[2].pattern == 3 && song.playlist[3].pattern == 4); // (the first split's patterns moved up by two)
     CHECK (lynx::splitPatternByChannel (song, 99) == 0);
 }
 

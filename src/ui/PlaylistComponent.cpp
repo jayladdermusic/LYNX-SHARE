@@ -258,6 +258,7 @@ PlaylistComponent::PlaylistComponent (AudioEngine& e)
     followButton.setClickingTogglesState (false);
     followButton.setToggleState (EditorGlobals::get().isFollowing (false), juce::dontSendNotification);
     followButton.setTooltip (tr ("Follow: the Playlist scrolls along with the playhead while the song plays; off, you can look around freely"));
+    followButton.setTitle (tr ("Follow the playhead"));
     ui::setQuickTip (followButton, tr ("Follow the playhead"));
     followButton.onClick = [this] { runAction ("playlist.follow"); };
     followButton.setWantsKeyboardFocus (false);
@@ -265,6 +266,7 @@ PlaylistComponent::PlaylistComponent (AudioEngine& e)
     addAndMakeVisible (followButton);
 
     arrangementBox.setTooltip (tr ("Arrangement (as in FL, a project can have several)"));
+    arrangementBox.setTitle (tr ("Arrangement"));
     arrangementBox.setWantsKeyboardFocus (false);
     arrangementBox.setMouseClickGrabsKeyboardFocus (false);
     arrangementBox.onChange = [this] { arrangementChosen(); };

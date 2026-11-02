@@ -362,6 +362,7 @@ constexpr int tipHeight = 20;
 void setQuickTip (juce::Component& c, const juce::String& name, const juce::String& shortcut)
 {
     c.getProperties().set (quickTipProperty, shortcut.trim().isEmpty() ? name : name + "\t" + shortcut.trim());
+    c.setTitle (name); // (and the screen reader's name)
 }
 
 juce::String quickTipOf (const juce::Component& c)

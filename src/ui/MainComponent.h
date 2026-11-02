@@ -238,7 +238,11 @@ private:
     // Each toolbar panel's controls sit in an invisible group named after the panel ("Transport"...), for screen readers.
     struct ToolbarGroup final : juce::Component
     {
-        ToolbarGroup() { setInterceptsMouseClicks (false, true); }
+        ToolbarGroup()
+        {
+            setInterceptsMouseClicks (false, true);
+            setFocusContainerType (FocusContainerType::focusContainer); // (a screen reader lists its controls inside it)
+        }
         std::unique_ptr<juce::AccessibilityHandler> createAccessibilityHandler() override
         {
             return std::make_unique<juce::AccessibilityHandler> (*this, juce::AccessibilityRole::group);
@@ -326,6 +330,7 @@ private:
     {
     public:
         explicit TempoDisplay (AudioEngine& e) : engine (e) {}
+        std::unique_ptr<juce::AccessibilityHandler> createAccessibilityHandler() override;
         void paint (juce::Graphics& g) override;
         void mouseDown (const juce::MouseEvent& e) override;
         void mouseDrag (const juce::MouseEvent& e) override;

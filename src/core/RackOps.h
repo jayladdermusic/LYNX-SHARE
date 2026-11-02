@@ -43,8 +43,10 @@ int gotoFirstEmptyPattern (Song& song);
 int insertPattern (Song& song, int index, const std::string& name);
 
 // Creates one pattern per channel that has notes in pattern `index`, named "<pattern> - <channel>"
-// and coloured after the channel, inserted right after it. The original pattern is unchanged.
-// Returns how many patterns were created.
+// and coloured after the channel, inserted right after it. The original pattern is unchanged. In the
+// Playlist (as FL) each clip of the pattern becomes the new patterns' clips, one track each from the
+// clip's track down; a pattern not in the current arrangement gets them at the start of the song,
+// below the last used track. Returns how many patterns were created.
 int splitPatternByChannel (Song& song, int index);
 
 // Default name for a new pattern: "Pattern N" with the lowest N not in use.

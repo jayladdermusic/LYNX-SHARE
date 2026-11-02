@@ -2045,6 +2045,7 @@ public:
             browser.stopButton.setPrimary (playing);
             const auto text = playing ? tr ("Stop the sample preview") : tr ("Play the sample preview");
             browser.stopButton.setTooltip (text);
+            browser.stopButton.setTitle (text);
             ui::setHint (browser.stopButton, text, true);
         }
         if (browser.stopButton.isVisible() != show)
@@ -2356,6 +2357,10 @@ BrowserComponent::BrowserComponent (AudioEngine& e, Role r)
     });
     focusWatcher = std::make_unique<FocusWatcher> (*this);
 
+    searchBox.setTitle (tr ("Search"));
+    viewButton.setTitle (tr ("Browser options"));
+    stopButton.setTitle (tr ("Play the sample preview"));
+    previewVolume.setTitle (tr ("Sample preview volume"));
     searchBox.setTextToShowWhenEmpty (tr ("Search (Ctrl+F): kick -loop, snare OR clap, hat*.wav"), theme::colour::textDisabled);
     searchBox.addListener (this);
     searchBox.setEscapeAndReturnKeysConsumed (true);

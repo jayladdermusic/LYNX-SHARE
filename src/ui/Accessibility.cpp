@@ -220,7 +220,7 @@ std::unique_ptr<juce::AccessibilityHandler> AccessLayer::PanelFocus::createAcces
     struct Handler final : juce::AccessibilityHandler
     {
         explicit Handler (PanelFocus& f) : juce::AccessibilityHandler (f, juce::AccessibilityRole::group), focus (f) {}
-        juce::String getTitle() const override { return focus.layer.panelName (focus.context) + ", " + focus.layer.currentText (focus.context); }
+        juce::String getTitle() const override { return focus.layer.panelText (focus.context); }
         PanelFocus& focus;
     };
     return std::make_unique<Handler> (*this);
@@ -277,7 +277,7 @@ void AccessLayer::focusPanel (Context context)
     if (target != nullptr && target->isShowing() && (focused == nullptr || focused->getTopLevelComponent() == target->getTopLevelComponent()))
         target->grabKeyboardFocus(); // (the screen reader reads the panel's name and current item)
     else
-        speak (panelName (context) + ", " + currentText (context));
+        speak (panelText (context));
 }
 
 void AccessLayer::labelControls (juce::Component& root)
@@ -467,6 +467,13 @@ juce::String AccessLayer::panelName (Context focus) const
         case Context::global: break;
     }
     return {};
+}
+
+juce::String AccessLayer::panelText (Context focus) const
+{
+    juce::StringArray parts { panelName (focus), currentText (focus) };
+    parts.removeEmptyStrings();
+    return joined (parts);
 }
 
 juce::String AccessLayer::currentText (Context focus) const
@@ -1281,6 +1288,13 @@ void AccessLayer::afterAction (const std::string& id, Context focus)
     }
     if (id == "browser.next" || id == "browser.previous" || id == "browser.openFolder" || id == "browser.closeFolder" || starts ("browser.swap"))
         return speak (panels.browser.describeSelection());
+    if (id == "rack.sendToInserts" || id == "mixer.linkChannels" || id == "mixer.linkChannelsFrom") // each channel and its insert
+    {
+        juce::StringArray linked;
+        for (const auto channel : engine.getSelectedChannels())
+            linked.add (channelText (channel));
+        return speak (linked.joinIntoString (". "));
+    }
     if (id == "mixer.moveLeft" || id == "mixer.moveRight" || id == "mixer.soloSelected" || id == "mixer.altSoloSelected")
         return speak (mixerTrackText (panels.mixer.getSelectedTrack()));
     if (id == "playlist.ripple")

@@ -61,6 +61,32 @@ std::optional<double> ValueSpec::parse (const juce::String& typed) const
     return controls::snapToInterval (v, minimum, interval);
 }
 
+std::unique_ptr<juce::AccessibilityHandler> createValueHandler (juce::Component& c, juce::AccessibilityRole role, ValueAccess access)
+{
+    struct Value final : juce::AccessibilityValueInterface
+    {
+        explicit Value (ValueAccess a) : access (std::move (a)) {}
+        bool isReadOnly() const override { return access.set == nullptr; }
+        double getCurrentValue() const override { return access.get(); }
+        juce::String getCurrentValueAsString() const override { return access.text (access.get()); }
+        void setValue (double v) override
+        {
+            if (access.set != nullptr)
+                access.set (juce::jlimit (access.minimum, access.maximum, v));
+        }
+        void setValueAsString (const juce::String& typed) override { setValue (typed.getDoubleValue()); }
+        AccessibleValueRange getRange() const override
+        {
+            return { { access.minimum, access.maximum }, access.step > 0.0 ? access.step : (access.maximum - access.minimum) / 100.0 };
+        }
+
+        ValueAccess access;
+    };
+
+    return std::make_unique<juce::AccessibilityHandler> (c, role, juce::AccessibilityActions(),
+                                                         juce::AccessibilityHandler::Interfaces { std::make_unique<Value> (std::move (access)) });
+}
+
 juce::String utilityVolumeText (double volume)
 {
     const auto v = controls::clampUtilityVolume (volume);

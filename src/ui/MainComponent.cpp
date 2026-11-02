@@ -112,12 +112,6 @@ MainComponent::MainComponent (AudioEngine& e, bool restoreUserSettings)
 {
     heldKeys.setSender ([this] (int channel, int key, float velocity, bool on) { engine.sendLiveNote (channel, key, velocity, on, true); });
     connectBrowser (browser);
-    // the panels' names for screen readers (nothing on screen changes)
-    playlist.setTitle (tr ("Playlist"));
-    pianoRoll.setTitle (tr ("Piano Roll"));
-    rack.setTitle (tr ("Channel Rack"));
-    mixer.setTitle (tr ("Mixer"));
-    browser.setTitle (tr ("Browser"));
     addChildComponent (updateBar);
     updateBar.onVisibilityChanged = [this] { resized(); };
     if (restoreUserSettings) // (the real window: Update saves the project as on quit and reopens it)
@@ -2616,6 +2610,8 @@ void MainComponent::splitPatternByChannelNow()
 
     if (created == 0)
         juce::AlertWindow::showMessageBoxAsync (juce::MessageBoxIconType::InfoIcon, tr ("Split by channel"), tr ("This pattern has no notes."));
+    else
+        access.speak (tr ("Split into {0} patterns", { juce::String (created) }));
 }
 
 void MainComponent::showRenamePattern (int index)
@@ -2985,6 +2981,13 @@ void MainComponent::changeListenerCallback (juce::ChangeBroadcaster*)
 }
 
 // --- tempo display -------------------------------------------------------------------------------
+
+std::unique_ptr<juce::AccessibilityHandler> MainComponent::TempoDisplay::createAccessibilityHandler()
+{
+    return ui::createValueHandler (*this, juce::AccessibilityRole::slider,
+                                   { [this] { return engine.getSong().bpm; }, [this] (double v) { return spec().text (v); },
+                                     [this] (double v) { setBpm (v); }, minTempo, maxTempo, 1.0 });
+}
 
 ui::ValueSpec MainComponent::TempoDisplay::spec() const
 {

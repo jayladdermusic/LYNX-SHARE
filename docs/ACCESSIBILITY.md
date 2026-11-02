@@ -25,9 +25,12 @@ On macOS, Ctrl below means Cmd and Alt means Option. The menus are in the macOS 
 
 Panels are switched with their usual keys: F5 Playlist, F6 Channel Rack, F7 Piano Roll, F9 Mixer, Alt+F8 Browser. The same key on the focused panel hides it. The keyboard focus moves into the panel, and the panel and its current item are read. Moving the VoiceOver cursor into a panel makes it the focused one too.
 
-## Toolbar
+## Window layout
 
-The toolbar controls are in groups: Transport, Master volume and pitch, Recording options, Snap and pattern, Window shortcuts, File and undo, CPU, memory and polyphony, and Output monitor. With VoiceOver, VO+Shift+Down enters a group and VO+Shift+Up leaves it.
+The main window is a list of groups. With VoiceOver, VO+Shift+Down enters a group and VO+Shift+Up leaves it.
+
+- The toolbar groups: Transport, Master volume and pitch, Recording options, Snap and pattern, Window shortcuts, File and undo, CPU, memory and polyphony, and Output monitor. Tempo, master volume, master pitch and the song position are sliders (VO+Up / Down).
+- One group per open panel, named after it: the panel's keyboard target (its current item), its tools and its title bar buttons.
 
 ## Playlist
 
@@ -63,6 +66,8 @@ The Piano Roll edits the selected channel. Shift+arrows move the selected notes 
 
 The usual Up / Down select channels.
 
+Patterns › Split by channel makes one pattern per channel of the current pattern. In the Playlist each clip of the pattern becomes one clip per channel, on its track and the ones below; a pattern not yet in the Playlist gets them at bar 1, below the last used track.
+
 | Key | Action |
 | --- | --- |
 | Left / Right | Previous / next step |
@@ -81,6 +86,9 @@ The parameters of a channel list its volume, pan, mute, mixer insert, and every 
 | Shift+Left / Right | Pan left / right 5% |
 | Tab / Shift+Tab | Next / previous effect slot |
 | Enter | Open the effect slot (an empty slot opens the list of effects) |
+| Ctrl+L | Link the selected channels to this insert |
+
+To route a channel to an insert of your choice: select it in the Channel Rack, press F9, go to the insert with Left / Right and press Ctrl+L. (Ctrl+L in the Channel Rack sends the selected channels to free inserts instead.) The channel's parameters (Alt+Shift+V) also have its mixer insert.
 
 The parameters of a mixer track list volume, pan, stereo separation, mute, solo, phase, channel swap and its sends. The parameters of an effect slot list on/off, mix and every parameter of the effect.
 

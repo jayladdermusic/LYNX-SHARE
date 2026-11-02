@@ -97,6 +97,7 @@ private:
     juce::String statusText() const;
     juce::String currentText (keys::Context focus) const;
     juce::String panelName (keys::Context focus) const;
+    juce::String panelText (keys::Context focus) const; // the name and the current item
 
     // cursors
     std::int64_t cursorOf (keys::Context focus) const;

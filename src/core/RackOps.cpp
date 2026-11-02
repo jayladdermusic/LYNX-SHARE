@@ -172,13 +172,54 @@ int splitPatternByChannel (Song& song, int index)
     if (created.empty())
         return 0;
 
-    shiftPatternClips (song, index + 1, (int) created.size());
+    const auto count = (int) created.size();
+    shiftPatternClips (song, index + 1, count);
     song.patterns.insert (song.patterns.begin() + index + 1, created.begin(), created.end());
 
     if (song.currentPattern > index)
-        song.currentPattern += (int) created.size();
+        song.currentPattern += count;
 
-    return (int) created.size();
+    const auto isSource = [index] (const Clip& c) { return c.kind == ClipKind::pattern && c.pattern == index; };
+    const auto placed = std::any_of (song.playlist.begin(), song.playlist.end(), isSource);
+
+    song.forEachClipList ([&isSource, index, count] (std::vector<Clip>& clips) {
+        std::vector<Clip> split;
+        split.reserve (clips.size());
+        for (const auto& c : clips)
+        {
+            if (! isSource (c))
+                split.push_back (c);
+            else
+                for (int k = 0; k < count; ++k)
+                {
+                    auto part = c;
+                    part.pattern = index + 1 + k;
+                    part.track = c.track + k;
+                    split.push_back (part);
+                }
+        }
+        clips = std::move (split);
+    });
+
+    if (! placed)
+    {
+        int below = 0;
+        for (const auto& c : song.playlist)
+            below = std::max (below, c.track + 1);
+
+        std::vector<Clip> start; // (at tick 0: first in the Playlist, which is sorted by start)
+        for (int k = 0; k < count; ++k)
+        {
+            Clip c;
+            c.pattern = index + 1 + k;
+            c.track = below + k;
+            c.length = song.patterns[(std::size_t) (index + 1 + k)].lengthTicks;
+            start.push_back (c);
+        }
+        song.playlist.insert (song.playlist.begin(), start.begin(), start.end());
+    }
+
+    return count;
 }
 
 namespace

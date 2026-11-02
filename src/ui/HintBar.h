@@ -43,7 +43,8 @@ juce::String withMarkup (const juce::String& text);
 // Quick tips: a small dark bubble with a control's name (and its shortcut, if it has one) that appears
 // about 400 ms after the mouse rests on it, under the control. It only names the tool, so nobody is lost
 // among the icons; what the control does in detail stays in the hint bar. Only components given a name
-// with setQuickTip() show one (the toolbar and the panel title bars).
+// with setQuickTip() show one (the toolbar and the panel title bars). The name is the control's title for
+// screen readers too.
 void setQuickTip (juce::Component& c, const juce::String& name, const juce::String& shortcut = {});
 juce::String quickTipOf (const juce::Component& c); // "name\tshortcut" ("" when none)
 
