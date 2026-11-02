@@ -45,6 +45,36 @@ FL to match.
   (hashes verified, uids and stand-ins kept, media inside the folder), the guest's channel saved / loaded with its
   uid, his part written, opened, adopted and merged (his channel in his tag, the host's untouched).
 
+## Windows GUI check (two fresh profiles, real mouse and keyboard)
+
+Test build, `LYNX_TEST_MODE=1`, profiles `%TEMP%\lynx168a\host` (FabFilter Twin 3 and Simplon known through a
+`--scan-one` of those two files only) and `%TEMP%\lynx168a\guest` (no plugins). Project: Kick (sampler, insert 1 with
+Simplon), Twin 3 (chords), Kick hi (same sample), pattern "Beat" on 3 Playlist clips. Screenshots in
+`E:\lynx-shots\168a\`.
+
+1. Host: File › Online session (Send my part back greyed) › Send project... → names, "Only his own part" →
+   native save dialog → "host - for Ana.lynxpack is ready… 4 files (5.2 MB), 3 plugin renders" (`send-dialog.png`,
+   `send-done.png`). Stand-ins checked: Twin 3 once 6.7 s / loop exactly one bar (2.000 s), peak 0.33-0.38; insert 1
+   timeline stem peak 0.37.
+2. Guest opens the package: summary (Carlos, inserts from 4, Playlist tracks from 2, keeps his own part)
+   (`open-summary.png`), then "Not installed here (their renders play, marked R): Twin 3, Simplon" (`open-plugins.png`);
+   amber R on Twin 3 in the Channel Rack and on insert 1 in the Mixer (`guest-rack.png`, `guest-mixer.png`).
+3. Guest adds a Synth channel with 4 steps (routed to his insert 4 automatically), Send my part back... →
+   "0 files, 0 plugin renders … Carlos asked that you keep only your own part: the rest was removed" — the copy keeps
+   only the Synth (`guest-menu.png`, `guest-own.png`, `part-sent.png`).
+4. Host: Merge a part... → "Ana's part is in the project: 1 channels, 0 patterns, 4 notes, 0 Playlist clips, 1
+   inserts" — Synth in Ana's blue, the host's channels untouched (`merge-done.png`, `host-merged.png`); Edit › Undo
+   takes the whole merge out (`host-undone.png`). Desktop clean afterwards (`clean1.png`).
+
+Found and fixed during the check: the R badge's bold font leaked into the channel name; the Mixer badge covered the
+arm button (now left of the FX count); the received project was called "project.lynx" (now named after the project).
+
 ## Where I stopped
 
-(filled at the end of the round)
+- Landed: P1 complete as described above (round 168a), merged with origin/main after the 2026-11-02 reboot (Loop
+  Starter's `loopStarterPattern` added to the pattern-reference visitor).
+- Not done in P1 (next): "Send my part back" offers no choice of which Playlist row / take to include (his whole
+  area goes); the guest's channels get his colour only at merge time (not while he records); stand-ins do not follow
+  note edits of a plugin part on a PC without the plugin (by design: the owner re-sends); no per-guest colour picker.
+- P2 (live session) starts from `parts::merge` / `uids` / `refs` / `StandIns` here; the wire diff, transport and
+  presence UI are still design only (ONLINE_SESSIONS.md §1, §6, §7).
