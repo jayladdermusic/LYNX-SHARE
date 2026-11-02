@@ -1,7 +1,9 @@
 # Round 167x: PR #31 (LordVersA) "Extract stems from sample" (closes #27): review, test, FL comparison
 
-PR head 11d4570b (f51f9dad + merge of origin/main 11d4570b, up to date with main e6e36fdd). Not landed: the user must
-first answer the PR's 6 "Decisions for you". This round only reviews, builds, tests and compares with FL.
+PR head 11d4570b (f51f9dad + merge of origin/main 11d4570b, up to date with main e6e36fdd). The user answered the
+PR's 6 decisions (2026-11-02): keep the licence wording, keep the pinned Hugging Face revision + SHA-256, macOS 13.4+
+for this feature only, VC++ message with a link + the Store's VCLibs dependency, size accepted, SignPath unchanged
+for now. Landed with his two commits unchanged and ours on top, after the lightness audit of §4.
 
 ## Where I stopped
 
@@ -93,3 +95,35 @@ script (`set -euo pipefail`, pinned SHA-256 = GitHub's digests, zip extracted by
 - This machine: VC++ redistributable x64 14.51.36247 installed (HKLM …\VC\Runtimes\x64 Installed=1; msvcp140_1.dll
   and vcruntime140_1.dll in System32). Windows also has its own C:\Windows\System32\onnxruntime.dll 1.17 (Windows ML):
   the PR loads its copy by full path, so that one is never picked up (and API 23 would be refused by 1.17 anyway).
+
+## 4. Status of the findings and measurements (Windows 11, i7 6 cores / 12 threads, 64 GB; other builds running)
+
+Fixed on top of his commits: R1 (e2570b84: own low-priority thread + non-blocking progress window, Cancel = flag +
+ORT terminate + download cancel, never a kill; resample checks the flag every 65 536 frames; one job at a time; app
+shutdown waits for the job), R2 / R3 (runtime checked before the consent, "file missing" vs "VC++ missing" message with
+the aka.ms link), R4 (models in %LOCALAPPDATA%\LYNX\models, $XDG_DATA_HOME/LYNX/models, mac Application Support; the
+test profile wins), R6 (abfa1d49: MSIX dependency Microsoft.VCLibs.140.00.UWPDesktop, release.yml's MSIX install
+test passes the framework), R8 (threads = physical − 1, at most logical − 2, no spinning), R9 (size check), R10
+(/proc/self/exe), R14 (9383b96a: 13 languages), R15 (PRIVACY). Plus aa07837f: no ORT CPU arena. Left as is: R5 (user:
+"SignPath nothing now"), R7 (streaming, follow-up; the whole-file buffers are ~0.4 GB for 3 min), R11-R13.
+
+Lightness audit (requirement of the user):
+- Startup / idle, fresh profile, same machine, alternated (`idle.ps1`: ready = main window shown, then 15 s, then
+  idle window): main (9fab84ca, no stems code) ready 1.85-2.09 s, working set 110-111 MB, private 127-130 MB, 53-58
+  threads, 93 modules; fixed build ready 1.82-1.97 s, 110-111 MB, 127-129 MB, 52-57 threads, 93 modules. Idle CPU
+  (60 s): main 4.5 / 6.1 s, fixed 5.6 s (the load of the other builds makes this noisy; 20 s windows overlap both
+  ways). `onnxruntime.dll` is never in the module list at start (it sits next to LYNX.exe), no .onnx file is read or
+  created, no model check at start or on project load: the code only runs from the clip menu item.
+- Threads: the job runs on its own low-priority thread; the message thread only polls progress (100 ms timer); the
+  audio thread never sees it. ORT: physical − 1 = 5 intra-op threads (PR: logical − 1 = 11), inter-op 1, no spinning.
+- `--stemsplit` of a 180 s song (LYNX render of FL's demo "Song For You", 44.1 kHz stereo), run back to back at load
+  ~30: PR 209.7 s wall, 1 372 s CPU, peak working set 5 286 MB; fixed 155.5 s wall, 442 s CPU, peak 4 589 MB. At load
+  ~10: PR 173.7 s / 1 260 s CPU / 5 316 MB, fixed 137 s / 428 s CPU / 5 285 MB (arena still on).
+- Memory (xmem log of a temporary build): session open +410 MB (12.8 s); each 7.8 s segment needs ~4.1 GB of tensors
+  for a moment (the same with 1 or 5 threads, with or without graph optimisation / prepacking: it is the model). With
+  ORT's arena the process stayed at 4.9 GB until the end (and 5.3 GB with 11 threads); without it (aa07837f) it goes
+  back to ~850 MB between segments (session + whole-file buffers) and 506 MB right after the job, before the model is
+  released. Same speed.
+- Quality: the fixed build's stems equal the PR's within float rounding (SNR 122-134 dB per stem); the sum of the
+  four stems rebuilds the mix at 32.9 dB SNR; no time offset (cross-correlation lag 0).
+
