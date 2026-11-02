@@ -276,6 +276,75 @@ std::vector<Action> makeActions()
         list.push_back ({ soloIds[i], TR_NOOP ("Solo channel {0}"), Context::channelRack, { chord (digit, ctrl) } });
     }
 
+    // the screen reader layer (ui/Accessibility.h, after OSARA for REAPER): only while accessibility mode is on
+    list.push_back ({ "access.toggle", TR_NOOP ("Accessibility mode on/off"), Context::global, { chord ('A', ctrl | alt | shift) } });
+    auto access = [&list] (const char* id, const char* description, Context context, std::vector<Chord> defaults) {
+        list.push_back ({ id, description, context, std::move (defaults), false, true });
+    };
+    access ("access.settings", TR_NOOP ("Accessibility settings"), Context::global, { chord ('O', alt | shift) });
+#ifndef __APPLE__ // (macOS: the system menu bar, VoiceOver's own VO+M)
+    access ("access.menuBar", TR_NOOP ("Open the menu bar"), Context::global, { chord (f10, alt), chord ('F', alt | shift) });
+#endif
+    access ("access.contextMenu", TR_NOOP ("Menu of the current item"), Context::global, { chord (f10, shift), chord (enter, shift) });
+    access ("access.parameters", TR_NOOP ("Parameters of the current item"), Context::global, { chord ('V', alt | shift) });
+    access ("access.projectParameters", TR_NOOP ("Project parameters"), Context::global, { chord ('G', alt | shift) });
+    access ("access.reportPosition", TR_NOOP ("Report the position"), Context::global, { chord ('P', alt | shift) });
+    access ("access.reportTempo", TR_NOOP ("Report the tempo and time signature"), Context::global, { chord ('B', alt | shift) });
+    access ("access.reportStatus", TR_NOOP ("Report the transport, mode and pattern"), Context::global, { chord ('I', alt | shift) });
+    access ("access.reportCurrent", TR_NOOP ("Report the current item"), Context::global, { chord ('C', alt | shift) });
+    access ("access.mute", TR_NOOP ("Mute or unmute the current item"), Context::global, { chord ('M', alt | shift) });
+    access ("access.solo", TR_NOOP ("Solo the current item"), Context::global, { chord ('S', alt | shift) });
+    access ("access.previousMarker", TR_NOOP ("Go to the previous marker"), Context::global, { chord (left, alt | shift) });
+    access ("access.nextMarker", TR_NOOP ("Go to the next marker"), Context::global, { chord (right, alt | shift) });
+
+    access ("access.playlist.previousTrack", TR_NOOP ("Previous track"), Context::playlist, { chord (up) });
+    access ("access.playlist.nextTrack", TR_NOOP ("Next track"), Context::playlist, { chord (down) });
+    access ("access.playlist.left", TR_NOOP ("Move the cursor one grid step left"), Context::playlist, { chord (left) });
+    access ("access.playlist.right", TR_NOOP ("Move the cursor one grid step right"), Context::playlist, { chord (right) });
+    access ("access.playlist.previousBar", TR_NOOP ("Move the cursor one bar left"), Context::playlist, { chord (left, alt) });
+    access ("access.playlist.nextBar", TR_NOOP ("Move the cursor one bar right"), Context::playlist, { chord (right, alt) });
+    access ("access.playlist.start", TR_NOOP ("Move the cursor to the start"), Context::playlist, { chord (home) });
+    access ("access.playlist.end", TR_NOOP ("Move the cursor to the end"), Context::playlist, { chord (end) });
+    access ("access.playlist.previousClip", TR_NOOP ("Previous clip on the track"), Context::playlist, { chord (tab, shift) });
+    access ("access.playlist.nextClip", TR_NOOP ("Next clip on the track"), Context::playlist, { chord (tab) });
+    access ("access.playlist.open", TR_NOOP ("Open the current clip"), Context::playlist, { chord (enter) });
+    access ("access.playlist.place", TR_NOOP ("Place the current pattern or brush at the cursor"), Context::playlist, { chord (enter, alt) });
+    access ("access.playlist.selectionStart", TR_NOOP ("Start the time selection at the cursor"), Context::playlist, { chord ('[') });
+    access ("access.playlist.selectionEnd", TR_NOOP ("End the time selection at the cursor"), Context::playlist, { chord (']') });
+
+    access ("access.pianoRoll.up", TR_NOOP ("Move the cursor one semitone up"), Context::pianoRoll, { chord (up) });
+    access ("access.pianoRoll.down", TR_NOOP ("Move the cursor one semitone down"), Context::pianoRoll, { chord (down) });
+    access ("access.pianoRoll.left", TR_NOOP ("Move the cursor one grid step left"), Context::pianoRoll, { chord (left) });
+    access ("access.pianoRoll.right", TR_NOOP ("Move the cursor one grid step right"), Context::pianoRoll, { chord (right) });
+    access ("access.pianoRoll.previousBar", TR_NOOP ("Move the cursor one bar left"), Context::pianoRoll, { chord (left, alt) });
+    access ("access.pianoRoll.nextBar", TR_NOOP ("Move the cursor one bar right"), Context::pianoRoll, { chord (right, alt) });
+    access ("access.pianoRoll.start", TR_NOOP ("Move the cursor to the start"), Context::pianoRoll, { chord (home) });
+    access ("access.pianoRoll.end", TR_NOOP ("Move the cursor to the end"), Context::pianoRoll, { chord (end) });
+    access ("access.pianoRoll.previousChord", TR_NOOP ("Previous chord"), Context::pianoRoll, { chord (tab, shift) });
+    access ("access.pianoRoll.nextChord", TR_NOOP ("Next chord"), Context::pianoRoll, { chord (tab) });
+    access ("access.pianoRoll.higherNote", TR_NOOP ("Next higher note in the chord"), Context::pianoRoll, { chord (up, alt) });
+    access ("access.pianoRoll.lowerNote", TR_NOOP ("Next lower note in the chord"), Context::pianoRoll, { chord (down, alt) });
+    access ("access.pianoRoll.toggleNote", TR_NOOP ("Add or delete a note at the cursor"), Context::pianoRoll, { chord (enter) });
+    access ("access.pianoRoll.toggleSelection", TR_NOOP ("Select or deselect the note at the cursor"), Context::pianoRoll, { chord (enter, ctrl) });
+
+    access ("access.rack.left", TR_NOOP ("Previous step"), Context::channelRack, { chord (left) });
+    access ("access.rack.right", TR_NOOP ("Next step"), Context::channelRack, { chord (right) });
+    access ("access.rack.start", TR_NOOP ("First step"), Context::channelRack, { chord (home) });
+    access ("access.rack.end", TR_NOOP ("Last step"), Context::channelRack, { chord (end) });
+    access ("access.rack.toggleStep", TR_NOOP ("Turn the step on or off"), Context::channelRack, { chord (enter) });
+
+    access ("access.mixer.previous", TR_NOOP ("Previous mixer track"), Context::mixer, { chord (left) });
+    access ("access.mixer.next", TR_NOOP ("Next mixer track"), Context::mixer, { chord (right) });
+    access ("access.mixer.master", TR_NOOP ("Master track"), Context::mixer, { chord (home) });
+    access ("access.mixer.last", TR_NOOP ("Last mixer track in use"), Context::mixer, { chord (end) });
+    access ("access.mixer.volumeUp", TR_NOOP ("Increase volume"), Context::mixer, { chord (up) });
+    access ("access.mixer.volumeDown", TR_NOOP ("Decrease volume"), Context::mixer, { chord (down) });
+    access ("access.mixer.panLeft", TR_NOOP ("Pan left"), Context::mixer, { chord (left, shift) });
+    access ("access.mixer.panRight", TR_NOOP ("Pan right"), Context::mixer, { chord (right, shift) });
+    access ("access.mixer.previousSlot", TR_NOOP ("Previous effect slot"), Context::mixer, { chord (tab, shift) });
+    access ("access.mixer.nextSlot", TR_NOOP ("Next effect slot"), Context::mixer, { chord (tab) });
+    access ("access.mixer.openSlot", TR_NOOP ("Open the effect slot"), Context::mixer, { chord (enter) });
+
     return list;
 }
 
@@ -500,7 +569,7 @@ std::string KeyMap::findUserBound (const Chord& c, Context focus, bool typingPia
     {
         const auto& a = list[i];
 
-        if ((a.context != Context::global && a.context != focus) || chords[i] == a.defaults)
+        if (a.access || (a.context != Context::global && a.context != focus) || chords[i] == a.defaults)
             continue;
         if (std::find (chords[i].begin(), chords[i].end(), c) == chords[i].end()
             || std::find (a.defaults.begin(), a.defaults.end(), c) != a.defaults.end())
@@ -527,7 +596,7 @@ std::vector<std::string> KeyMap::shadowedBy (const Chord& c, const std::string& 
     for (std::size_t i = 0; i < list.size(); ++i)
     {
         const auto& a = list[i];
-        if (actionId == a.id || a.context == owner->context)
+        if (actionId == a.id || a.context == owner->context || a.access != owner->access)
             continue;
         if (owner->context != Context::global && a.context != Context::global)
             continue; // two different panels never meet
@@ -538,6 +607,16 @@ std::vector<std::string> KeyMap::shadowedBy (const Chord& c, const std::string& 
 }
 
 std::string KeyMap::find (const Chord& c, Context focus, bool typingPiano) const
+{
+    return match (c, focus, typingPiano, false);
+}
+
+std::string KeyMap::findAccess (const Chord& c, Context focus, bool typingPiano) const
+{
+    return match (c, focus, typingPiano, true);
+}
+
+std::string KeyMap::match (const Chord& c, Context focus, bool typingPiano, bool accessLayer) const
 {
     if (! c.isValid() || playsNote (c, typingPiano))
         return {};
@@ -550,7 +629,7 @@ std::string KeyMap::find (const Chord& c, Context focus, bool typingPiano) const
     {
         const auto& a = list[i];
 
-        if (a.context != Context::global && a.context != focus)
+        if (a.access != accessLayer || (a.context != Context::global && a.context != focus))
             continue;
 
         if (std::find (chords[i].begin(), chords[i].end(), c) == chords[i].end())
@@ -714,7 +793,7 @@ std::vector<std::pair<std::string, std::string>> KeyMap::conflicts() const
     for (std::size_t a = 0; a < list.size(); ++a)
         for (std::size_t b = a + 1; b < list.size(); ++b)
         {
-            if (! contextsOverlap (list[a].context, list[b].context))
+            if (! contextsOverlap (list[a].context, list[b].context) || list[a].access != list[b].access)
                 continue;
 
             for (const auto& c : chords[a])
@@ -731,9 +810,11 @@ std::vector<std::string> KeyMap::actionsWith (const Chord& chord, Context contex
 {
     std::vector<std::string> out;
     const auto& list = actions();
+    const auto* owner = findAction (except);
+    const auto accessLayer = owner != nullptr && owner->access;
 
     for (std::size_t i = 0; i < list.size(); ++i)
-        if (list[i].context == context && except != list[i].id
+        if (list[i].context == context && list[i].access == accessLayer && except != list[i].id
             && std::find (chords[i].begin(), chords[i].end(), chord) != chords[i].end())
             out.push_back (list[i].id);
 

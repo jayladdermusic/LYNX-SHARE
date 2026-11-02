@@ -791,6 +791,13 @@ public:
             return;
         }
 
+        if (args.contains ("--accesstest"))
+        {
+            // LYNX.exe --accesstest report.txt: the screen reader layer, off screen (nothing shows, nothing is saved)
+            runAccessTest (args[args.indexOf ("--accesstest") + 1].unquoted());
+            return;
+        }
+
         if (args.contains ("--windowtest"))
         {
             // LYNX.exe --windowtest report.txt: opens the Quick-add palette, the Audio editor, a plugin-like window and a name dialog
@@ -3007,6 +3014,123 @@ private:
             });
         };
         test->startTimer (1500);
+    }
+
+    // The screen reader layer (ui/Accessibility.h) driven by its keys on a main window kept off screen: the toolbar
+    // groups, what each key says, the Playlist's tracks and clips, the Mixer and the Piano Roll. (The keyboard focus
+    // itself needs an active window, so a panel change is checked by what is said instead.)
+    void runAccessTest (const juce::String& reportPath)
+    {
+        juce::LookAndFeel::setDefaultLookAndFeel (&lookAndFeel);
+
+        struct AccessTest final : juce::Timer
+        {
+            juce::String reportPath, report;
+            bool ok = true;
+            int stepIndex = 0;
+            std::unique_ptr<lynx::AudioEngine> engine;
+            std::unique_ptr<lynx::MainComponent> ui;
+            std::function<void()> done;
+
+            void check (const juce::String& what, bool passed)
+            {
+                report << (passed ? "ok   " : "FAIL ") << what << " [" << spoken() << "]\n";
+                juce::File (reportPath).replaceWithText (report);
+                ok = ok && passed;
+            }
+
+            juce::String spoken() const { return ui->getAccessLayerForTest().getLastSpoken(); }
+            void press (int key, juce::ModifierKeys mods = {}) { ui->keyPressed (juce::KeyPress (key, mods, 0)); }
+            void toggleLayer() { press ('a', juce::ModifierKeys (juce::ModifierKeys::commandModifier | juce::ModifierKeys::altModifier | juce::ModifierKeys::shiftModifier)); }
+
+            void timerCallback() override // a step each 300 ms: the main window's timer runs in between
+            {
+                using lynx::tr;
+                switch (stepIndex++)
+                {
+                    case 0:
+                    {
+                        const juce::Component* transport = nullptr;
+                        for (auto* c : ui->getChildren())
+                            if (c->getTitle() == tr ("Transport"))
+                                transport = c;
+                        check ("toolbar: the Transport group holds its controls", transport != nullptr && transport->getNumChildComponents() == 8);
+                        check ("layer: off without a screen reader", ! ui->getAccessLayerForTest().isOn());
+                        toggleLayer();
+                        check ("layer: on by its key", ui->getAccessLayerForTest().isOn() && spoken() == tr ("Accessibility mode on"));
+                        press (juce::KeyPress::F5Key); // (the Channel Rack has the focus at first)
+                        break;
+                    }
+                    case 1:
+                        check ("Playlist: named when it has the focus", spoken().startsWith (tr ("Playlist") + ", " + tr ("Track {0}", { "1" })));
+                        press (juce::KeyPress::downKey);
+                        check ("Playlist: Down reads the next track and its clips", spoken() == tr ("Track {0}", { "2" }) + ", " + tr ("{0} clips", { "2" }));
+                        press (juce::KeyPress::tabKey);
+                        check ("Playlist: Tab reaches the first clip", spoken().contains (tr ("Bar {0} beat {1}", { "1", "1" })));
+                        press (juce::KeyPress::tabKey);
+                        check ("Playlist: Tab again, the next clip", spoken().contains (tr ("Bar {0} beat {1}", { "5", "1" })));
+                        press (juce::KeyPress::tabKey);
+                        check ("Playlist: past the last clip", spoken() == tr ("No more clips"));
+                        press (juce::KeyPress::tabKey, juce::ModifierKeys::shiftModifier);
+                        check ("Playlist: Shift+Tab, back to the first clip", spoken().contains (tr ("Bar {0} beat {1}", { "1", "1" })));
+                        press (juce::KeyPress::upKey);
+                        press (juce::KeyPress::tabKey);
+                        check ("Playlist: Tab on an empty track", spoken() == tr ("No clips on this track"));
+                        press (juce::KeyPress::rightKey, juce::ModifierKeys::altModifier);
+                        check ("Playlist: Alt+Right, the next bar", spoken() == tr ("Bar {0} beat {1}", { "2", "1" }));
+                        press (juce::KeyPress::F9Key);
+                        break;
+                    case 2:
+                        check ("Mixer: named when it gets the focus", spoken().startsWith (tr ("Mixer") + ", " + tr ("Master")));
+                        press (juce::KeyPress::rightKey);
+                        check ("Mixer: Right, the next insert", spoken().startsWith (tr ("Insert {0}", { "1" }) + ", "));
+                        press (juce::KeyPress::upKey);
+                        check ("Mixer: Up raises the volume", spoken() == tr ("{0} dB", { "1.0" }));
+                        press (juce::KeyPress::tabKey);
+                        check ("Mixer: Tab, the first effect slot", spoken() == tr ("Slot {0}", { "1" }) + ", " + tr ("empty"));
+                        press (juce::KeyPress::F7Key);
+                        break;
+                    case 3:
+                        check ("Piano Roll: named when it gets the focus", spoken().startsWith (tr ("Piano Roll")));
+                        press (juce::KeyPress::returnKey); // (the new song's pattern has a C5 at its start)
+                        check ("Piano Roll: Enter deletes the note at the cursor", spoken() == tr ("Deleted {0}", { "C5" }));
+                        press (juce::KeyPress::returnKey);
+                        check ("Piano Roll: Enter again adds it back", spoken().startsWith (tr ("Added {0}", { "C5" })));
+                        toggleLayer();
+                        check ("layer: off by its key", ! ui->getAccessLayerForTest().isOn());
+                        stopTimer();
+                        done();
+                        break;
+                    default:
+                        break;
+                }
+            }
+        };
+
+        auto* test = new AccessTest();
+        test->reportPath = reportPath;
+        test->engine = std::make_unique<lynx::AudioEngine> (false);
+        test->ui = std::make_unique<lynx::MainComponent> (*test->engine, false); // default layout and keys, nothing saved
+        test->ui->setSize (1280, 720);
+        test->ui->showDesktopForSnapshot (true);
+        test->engine->editSong ([] (lynx::Song& s) { // two clips on the second track, at bars 1 and 5
+            for (const auto bar : { 0, 4 })
+            {
+                lynx::Clip c;
+                c.track = 1;
+                c.start = (std::int64_t) bar * 4 * lynx::ppq;
+                c.length = 4 * lynx::ppq;
+                s.playlist.push_back (c);
+            }
+        }, false);
+        test->done = [this, test] {
+            setApplicationReturnValue (test->ok ? 0 : 1);
+            juce::MessageManager::callAsync ([this, test] {
+                delete test;
+                quit();
+            });
+        };
+        test->startTimer (300);
     }
 
     // LYNX.exe --plugintest plugin.vst3 report.txt ["name"]: loads the plugin (or the one named in a shell), plays notes if it is an

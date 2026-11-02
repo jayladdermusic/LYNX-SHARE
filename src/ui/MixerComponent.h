@@ -288,6 +288,8 @@ public:
         repaint();
     }
     void openSlotEditor (int slot) { openEditor (slot); }
+    void showAddMenu (int slot);  // an empty slot's menu: the effects to put there
+    void showSlotMenu (int slot); // a slot's options
 
     // Sizes the panel for a view of `viewWidth` x `viewHeight` (round 163): when the slots and the EQ don't both fit,
     // the EQ folds to its title bar (click it to unfold); when even that doesn't fit, the panel is taller than the
@@ -371,8 +373,6 @@ private:
     void toggleTuneNote (juce::Point<int> p);
     int knobAt (juce::Point<int> p) const;
     const std::vector<EffectSlot>* slots() const;
-    void showAddMenu (int slot);
-    void showSlotMenu (int slot);
     juce::Rectangle<int> pluginButtonBounds() const;
     void openEditor (int slot);
     juce::Rectangle<int> editorButtonBounds() const;
@@ -411,6 +411,18 @@ public:
         selectTrack (track);
         effects.selectSlot (slot);
         effects.openSlotEditor (slot);
+    }
+
+    // Keyboard and screen reader access (ui/Accessibility.h): the selected insert and slot, their menus.
+    int getSelectedTrack() const noexcept { return strips.getSelectedTrack(); }
+    int getSelectedSlot() const noexcept { return effects.getSelectedSlot(); }
+    void showTrackMenuHere (int track) { strips.buildMenu (track).showMenuAsync (juce::PopupMenu::Options().withTargetComponent (&strips)); }
+    void showSlotMenuHere (int track, int slot)
+    {
+        if (track >= 0 && track < (int) engine.getSong().mixer.size() && slot < (int) engine.getSong().mixer[(std::size_t) track].effects.size())
+            effects.showSlotMenu (slot);
+        else
+            effects.showAddMenu (slot);
     }
 
     // The key map's mixer.* actions.

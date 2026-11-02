@@ -19,6 +19,7 @@
 #include "ui/MixerComponent.h"
 #include "ui/PlaylistComponent.h"
 #include "ui/HintBar.h"
+#include "ui/Accessibility.h"
 #include "ui/Splash.h"
 #include "ui/Toolbar.h"
 #include "ui/Updater.h"
@@ -66,6 +67,7 @@ public:
     void waitForBrowserForSnapshot() { browser.waitForListing (5000); }
     juce::StringArray getMenuNamesForSnapshot() { return getMenuBarNames(); }
     juce::PopupMenu getMenuForSnapshot (int index) { return getMenuForIndex (index, {}); }
+    const AccessLayer& getAccessLayerForTest() const noexcept { return access; }
     juce::PopupMenu getPanelMenuForSnapshot (workspace::Panel panel)
     {
         juce::PopupMenu menu;
@@ -145,6 +147,7 @@ private:
 
     // key map and actions
     bool runAction (const std::string& id);
+    bool runKeyAction (const std::string& id); // runAction, then the screen reader layer says what changed
     keys::Context focusContext() const;
     void loadKeyMap();
     keys::KeyMap keyMap;
@@ -201,7 +204,12 @@ private:
     void importMidiFile (const juce::File& file, const MidiFileIo::ImportOptions& options);
     static float& lastTweakedClipboard();
     void setTweakedValue (const AutomationTarget& target, float value);
-    juce::MenuBarComponent menuBar { this };
+    juce::MenuBarComponent menuBar { this }; // in the window (macOS: the system menu bar instead)
+#if JUCE_MAC
+    static constexpr bool nativeMenuBar = true;
+#else
+    static constexpr bool nativeMenuBar = false;
+#endif
     juce::RecentlyOpenedFilesList recent;
     // The main toolbar is two rows high, laid out the way FL Studio arranges its panels (docs/WORKFLOW_FL.md,
     // section 5.1): the menu with the hint bar under it, transport (with the time display and the song
@@ -227,6 +235,17 @@ private:
     std::unique_ptr<toolbar::EditOverlay> toolbarEditor;
     std::unique_ptr<juce::Component> setupOverlay; // the first-start / Options > Setup wizard, over everything
     toolbar::EditOverlay::Bounds panelBounds {}; // each shown toolbar panel (for the edit mode)
+    // Each toolbar panel's controls sit in an invisible group named after the panel ("Transport"...), for screen readers.
+    struct ToolbarGroup final : juce::Component
+    {
+        ToolbarGroup() { setInterceptsMouseClicks (false, true); }
+        std::unique_ptr<juce::AccessibilityHandler> createAccessibilityHandler() override
+        {
+            return std::make_unique<juce::AccessibilityHandler> (*this, juce::AccessibilityRole::group);
+        }
+    };
+    std::array<ToolbarGroup, toolbarlayout::groupCount> toolbarGroups;
+    std::vector<juce::Component*> toolbarControls (toolbarlayout::Group group);
     juce::Rectangle<int> fixedToolbarArea;       // the menu and the hint bar
     void newProject (bool askAlways = false); // File › New: the New project window unless turned off
     void startNewProject (Song song, const juce::File& file);
@@ -450,6 +469,8 @@ private:
     MixerComponent mixer;
     BrowserComponent browser;
     Workspace workspace; // after the panels' contents: it is destroyed first
+    AccessLayer access { engine, { playlist, pianoRoll, rack, mixer, browser, menuBar, [this] (keys::Context c) { workspace.activate (panelOf (c)); } }, persistent };
+    static Panel panelOf (keys::Context context); // (focusContext the other way round)
     updater::UpdateBar updateBar; // "LYNX SHARE x.y.z is available" under the toolbar (round 166b)
     std::unique_ptr<juce::Component> danceStage; // the dance channels' dancers over the workspace (ui/DanceView.h, round 165e)
 

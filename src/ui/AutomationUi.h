@@ -10,6 +10,11 @@ juce::String describeAutomationTarget (AudioEngine& engine, const AutomationTarg
 // The target's current value as its control shows it ("78%", "-3.2 dB", "L50", a plugin parameter's own text);
 // "" when the target is gone (round 162d: the toolbar's last-tweaked read-out).
 juce::String describeTargetValue (AudioEngine& engine, const AutomationTarget& target);
+// The same for any value 0..1 of the target (what a control set to it would show).
+juce::String describeTargetValue (AudioEngine& engine, const AutomationTarget& target, float value);
+// Sets the target to `value` (0..1) as its control would: a hosted plugin's parameter directly, anything else as an
+// undoable edit of the song.
+void setTargetValueFromUi (AudioEngine& engine, const AutomationTarget& target, float value);
 
 // Creates an automation for the target, starting at the current value, plus a clip of it in the Playlist
 // (from the start of the song to its end, on a free track), like FL's "Create automation clip".

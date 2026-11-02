@@ -87,6 +87,9 @@ public:
     bool isPianoRollView() const noexcept { return pianoRollView; }
     bool areGraphLanesShown() const noexcept { return graphLanes; }
     juce::PopupMenu getChannelMenuForSnapshot (int channel) { return buildChannelMenu (channel); }
+    // Keyboard and screen reader access (ui/Accessibility.h): the channel menu without a mouse position, the steps.
+    void showChannelMenuHere (int channel) { buildChannelMenu (channel).showMenuAsync (juce::PopupMenu::Options().withTargetComponent (this)); }
+    int numSteps() const;   // the pattern's steps
     void setGraphLevelForSnapshot (int level) { graphLevel = level; graphLanes = true; updateSize(); repaint(); }
     void rotateSelected (int steps);
     void fillSelected (int every);
@@ -154,7 +157,6 @@ private:
     Area areaAt (int x, int y, int& row) const;
     void moved() override;
     int stickyX = 0; // how far the viewport scrolled the rack sideways (the controls column stays in view)
-    int numSteps() const;   // the pattern's steps
     int shownSteps() const; // plus FL's ghost steps: the free width after the pattern's end (issue #11)
     int ghostSteps = 0;
     // channel looping: the row's loop point in steps (0: the row doesn't loop), the advanced controls' column (FL's

@@ -776,7 +776,11 @@ juce::String describeAutomationTarget (AudioEngine& engine, const AutomationTarg
 
 juce::String describeTargetValue (AudioEngine& engine, const AutomationTarget& target)
 {
-    const auto value = engine.currentTargetValue (target);
+    return describeTargetValue (engine, target, engine.currentTargetValue (target));
+}
+
+juce::String describeTargetValue (AudioEngine& engine, const AutomationTarget& target, float value)
+{
     if (value < 0.0f)
         return {};
     if (target.kind == AutomationTargetKind::channelParam || target.kind == AutomationTargetKind::effectParam)
@@ -788,7 +792,7 @@ juce::String describeTargetValue (AudioEngine& engine, const AutomationTarget& t
             if (target.param < 0 || target.param >= plugin->getParameters().size())
                 return {};
             auto* p = plugin->getParameters()[target.param];
-            auto text = p->getCurrentValueAsText().trim();
+            auto text = p->getText (value, 40).trim();
             if (text.isEmpty())
                 text = juce::String (value * 100.0f, 1) + "%";
             else if (const auto label = p->getLabel().trim(); label.isNotEmpty() && ! text.endsWith (label))
@@ -798,6 +802,19 @@ juce::String describeTargetValue (AudioEngine& engine, const AutomationTarget& t
     }
     const auto text = lasttweak::valueText (engine.getSong(), target, value);
     return text.empty() ? juce::String (juce::roundToInt (value * 100.0f)) + "%" : juce::String::fromUTF8 (text.c_str());
+}
+
+void setTargetValueFromUi (AudioEngine& engine, const AutomationTarget& target, float value)
+{
+    value = juce::jlimit (0.0f, 1.0f, value);
+    if (target.kind == AutomationTargetKind::channelParam)
+        if (auto* p = dynamic_cast<PluginInstrument*> (engine.getChannelInstrument (target.index).get()))
+            return p->setParameterFromUi (target.param, value);
+    if (target.kind == AutomationTargetKind::effectParam)
+        if (auto* p = dynamic_cast<PluginEffect*> (engine.getEffect (target.index, target.slot).get()))
+            return p->setParameterFromUi (target.param, value);
+    engine.editSong ([&target, value] (Song& s) { s.setTargetValue (target, value); });
+    engine.noteTweaked (target);
 }
 
 void createAutomationClip (AudioEngine& engine, const AutomationTarget& target)

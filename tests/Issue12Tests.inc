@@ -48,6 +48,11 @@ TEST (issue12_every_action_takes_a_user_key)
             if (inDefaults)
                 continue;
             const auto focus = a.context == Context::global ? Context::playlist : a.context;
+            if (a.access) // the screen reader layer has its own lookup
+            {
+                CHECK (map.findAccess (c, focus, false) == a.id);
+                continue;
+            }
             CHECK (map.findUserBound (c, focus, false) == a.id);
             CHECK (map.find (c, focus, false) == a.id || map.findUserBound (c, focus, false) == a.id);
         }

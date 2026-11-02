@@ -21,6 +21,7 @@ Windows, macOS and Linux.</p>
   <a href="#opens-fl-studio-projects">FL projects</a> ·
   <a href="docs/PLUGINS.md">Built-in plugins</a> ·
   <a href="#building">Building</a> ·
+  <a href="docs/ACCESSIBILITY.md">Screen readers</a> ·
   <a href="docs/STATUS.md">Status</a> ·
   <a href="docs/ROADMAP.md">Roadmap</a>
 </p>

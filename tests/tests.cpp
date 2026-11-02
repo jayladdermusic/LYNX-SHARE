@@ -27,6 +27,7 @@
 
 #include "core/AutomationDisplay.h"
 #include "core/ShownEffectSlot.h"
+#include "core/AccessNav.h"
 #include "core/Dither.h"
 #include "core/DrumSynthLive.h"
 #include "core/Effects.h"
@@ -16933,3 +16934,4 @@ TEST (fl_low_lifter_matches_fl_engine)
 #include "LoopStarter168bTests.inc"
 #include "Rec168kTests.inc"
 #include "MixPre167qTests.inc"
+#include "AccessTests.inc"

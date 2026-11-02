@@ -112,6 +112,12 @@ MainComponent::MainComponent (AudioEngine& e, bool restoreUserSettings)
 {
     heldKeys.setSender ([this] (int channel, int key, float velocity, bool on) { engine.sendLiveNote (channel, key, velocity, on, true); });
     connectBrowser (browser);
+    // the panels' names for screen readers (nothing on screen changes)
+    playlist.setTitle (tr ("Playlist"));
+    pianoRoll.setTitle (tr ("Piano Roll"));
+    rack.setTitle (tr ("Channel Rack"));
+    mixer.setTitle (tr ("Mixer"));
+    browser.setTitle (tr ("Browser"));
     addChildComponent (updateBar);
     updateBar.onVisibilityChanged = [this] { resized(); };
     if (restoreUserSettings) // (the real window: Update saves the project as on quit and reopens it)
@@ -458,7 +464,15 @@ MainComponent::MainComponent (AudioEngine& e, bool restoreUserSettings)
     // recent files (stored in %APPDATA%\LYNX)
     recent.setMaxNumberOfItems (12);
     recent.restoreFromString (PluginHost::settingsFolder().getChildFile ("recentes.txt").loadFileAsString());
-    addAndMakeVisible (menuBar);
+    if (nativeMenuBar)
+    {
+#if JUCE_MAC
+        if (persistent) // (not the --snapshot windows)
+            juce::MenuBarModel::setMacMainMenu (this);
+#endif
+    }
+    else
+        addAndMakeVisible (menuBar);
 
     for (auto* c : std::initializer_list<juce::Component*> { &newButton, &openButton, &saveButton, &exportButton, &undoButton, &redoButton, &playButton, &stopButton,
                                                              &recordButton, &recordMenuButton, &patternModeButton, &songModeButton, &metronomeButton, &typingPianoButton, &countInButton, &waitInputButton,
@@ -547,6 +561,14 @@ MainComponent::MainComponent (AudioEngine& e, bool restoreUserSettings)
     };
     engine.nameAutomation = [this] (const AutomationTarget& t) { return describeAutomationTarget (engine, t).toStdString(); };
     addAndMakeVisible (gridBox); // global grid (editors)
+    for (int g = 0; g < toolbarlayout::groupCount; ++g)
+    {
+        auto& box = toolbarGroups[(std::size_t) g];
+        box.setTitle (tr (toolbarlayout::groupName ((toolbarlayout::Group) g)));
+        addAndMakeVisible (box);
+        for (auto* c : toolbarControls ((toolbarlayout::Group) g))
+            box.addChildComponent (c); // (keeps its visibility)
+    }
     engine.addChangeListener (this);
     setTypingPiano (typingPiano);
     refreshRecordOptionButtons();
@@ -593,6 +615,10 @@ MainComponent::MainComponent (AudioEngine& e, bool restoreUserSettings)
 
 MainComponent::~MainComponent()
 {
+#if JUCE_MAC
+    if (persistent)
+        juce::MenuBarModel::setMacMainMenu (nullptr);
+#endif
     setSecondaryWindowKeyHandler (nullptr);
     cancelProjectLoad(); // an open in progress uses the engine from its thread
     if (sessionLock != nullptr) // a clean exit: no "LYNX did not close properly" next time
@@ -692,7 +718,7 @@ void MainComponent::resized()
         return w;
     };
     menuBar.getProperties().set ("lynxTightMenuBar", false);
-    int menuWidth = measureMenu();
+    int menuWidth = nativeMenuBar ? 0 : measureMenu();
     if (menuWidth > 390) // translated menu titles (German, Russian...): English stays as it was
     {
         menuBar.getProperties().set ("lynxTightMenuBar", true);
@@ -732,16 +758,9 @@ void MainComponent::resized()
         dividers.push_back (toolbar.getX());
         take (9);
     };
-    auto hide = [] (std::initializer_list<juce::Component*> components) {
-        for (auto* c : components)
-        {
-            c->setVisible (false);
-            c->setBounds ({});
-        }
-    };
-    auto put = [] (juce::Component& c, juce::Rectangle<int> r) {
+    auto put = [this] (juce::Component& c, juce::Rectangle<int> r) { // r: in this component (a toolbar control sits in its group)
         c.setVisible (true);
-        c.setBounds (r);
+        c.setBounds (c.getParentComponent() != nullptr ? c.getParentComponent()->getLocalArea (this, r) : r);
     };
     // a block of icon buttons, three per row on both rows
     auto grid = [&] (juce::Rectangle<int> panel, std::initializer_list<juce::Component*> buttons) {
@@ -758,8 +777,9 @@ void MainComponent::resized()
     if (! toolbarLayout.visible)
     {
         const auto row = toolbar.withHeight (h);
-        const auto menu = row.withWidth (juce::jmin (menuWidth + 8, row.getWidth()));
-        put (menuBar, menu);
+        const auto menu = row.withWidth (nativeMenuBar ? 0 : juce::jmin (menuWidth + 8, row.getWidth()));
+        if (! nativeMenuBar)
+            put (menuBar, menu);
         titleArea = {};
         placeHintBar (row.withTrimmedLeft (menu.getWidth() + 12).withWidth (juce::jmin (900, row.getWidth() - menu.getWidth() - 12)).reduced (0, 1));
         fixedToolbarArea = bar;
@@ -767,8 +787,9 @@ void MainComponent::resized()
     else
     {
         auto column = take (hintWidth);
-        const auto menu = column.withY (row1).withHeight (h).removeFromLeft (juce::jmin (menuWidth + 8, column.getWidth()));
-        put (menuBar, menu);
+        const auto menu = column.withY (row1).withHeight (h).removeFromLeft (nativeMenuBar ? 0 : juce::jmin (menuWidth + 8, column.getWidth()));
+        if (! nativeMenuBar)
+            put (menuBar, menu);
         titleArea = column.withY (row1).withHeight (h).withTrimmedLeft (menu.getWidth() + 12).withTrimmedRight (4);
         if (titleArea.getWidth() < 60)
             titleArea = {};
@@ -784,24 +805,12 @@ void MainComponent::resized()
 
         if (! visible[(std::size_t) group])
         {
-            switch (group)
+            for (auto* c : toolbarControls (group))
             {
-                case Group::transport:
-                    hide ({ &patternModeButton, &songModeButton, &playButton, &stopButton, &recordButton, &tempoDisplay, &timeDisplay, &songPosition });
-                    break;
-                case Group::master: hide ({ &masterVolume, &masterPitch }); break;
-                case Group::record: hide ({ &metronomeButton, &typingPianoButton, &recordMenuButton, &countInButton, &waitInputButton, &midiLight }); break;
-                case Group::snap: hide ({ &gridBox, &patternBox, &newPatternButton, &patternMenuButton }); break;
-                case Group::windows:
-                    for (auto& b : panelButtons)
-                        hide ({ &b });
-                    hide ({ &pluginPickerButton });
-                    break;
-                case Group::file: hide ({ &newButton, &openButton, &saveButton, &exportButton, &undoButton, &redoButton }); break;
-                case Group::meters: hide ({ &perfMeter }); break;
-                case Group::output: hide ({ &output }); break;
-                case Group::count_: break;
+                c->setVisible (false);
+                c->setBounds ({});
             }
+            toolbarGroups[(std::size_t) group].setVisible (false);
             continue;
         }
 
@@ -814,6 +823,8 @@ void MainComponent::resized()
         divide();
         auto panel = take (widths[(std::size_t) group]);
         panelBounds[(std::size_t) group] = juce::Rectangle<int> (panel.getX() - 5, 0, panel.getWidth() + 10, toolbarHeight);
+        toolbarGroups[(std::size_t) group].setBounds (panelBounds[(std::size_t) group]); // before `put` places its controls
+        toolbarGroups[(std::size_t) group].setVisible (true);
 
         switch (group)
         {
@@ -899,6 +910,31 @@ void MainComponent::resized()
 }
 
 // --- toolbar layout ------------------------------------------------------------------------------
+
+std::vector<juce::Component*> MainComponent::toolbarControls (toolbarlayout::Group group)
+{
+    using toolbarlayout::Group;
+    switch (group)
+    {
+        case Group::transport: return { &patternModeButton, &songModeButton, &playButton, &stopButton, &recordButton, &tempoDisplay, &timeDisplay, &songPosition };
+        case Group::master: return { &masterVolume, &masterPitch };
+        case Group::record: return { &metronomeButton, &typingPianoButton, &recordMenuButton, &countInButton, &waitInputButton, &midiLight };
+        case Group::snap: return { &gridBox, &patternBox, &newPatternButton, &patternMenuButton };
+        case Group::windows:
+        {
+            std::vector<juce::Component*> list;
+            for (auto& b : panelButtons)
+                list.push_back (&b);
+            list.push_back (&pluginPickerButton);
+            return list;
+        }
+        case Group::file: return { &newButton, &openButton, &saveButton, &exportButton, &undoButton, &redoButton };
+        case Group::meters: return { &perfMeter };
+        case Group::output: return { &output };
+        case Group::count_: break;
+    }
+    return {};
+}
 
 void MainComponent::setToolbarLayout (const toolbarlayout::Layout& layout, bool save)
 {
@@ -1079,6 +1115,8 @@ void MainComponent::undoRedo (bool redo)
                    : tr ("Undone: {0}", { tr (label.text, { juce::String::fromUTF8 (label.arg.c_str()) }) }));
     h.value = tr ("Level {0}/{1}", { juce::String (engine.getHistoryPosition() + 1), juce::String (engine.getHistorySize()) });
     ui::postHint (h, 2500);
+    if (access.reportsUndo())
+        access.speak (h.text);
 }
 
 ui::Hint MainComponent::hintAt (juce::Point<int> p)
@@ -1147,6 +1185,20 @@ keys::Context MainComponent::focusContext() const
     return keys::Context::global;
 }
 
+Panel MainComponent::panelOf (keys::Context context)
+{
+    switch (context)
+    {
+        case keys::Context::channelRack: return Panel::channelRack;
+        case keys::Context::pianoRoll: return Panel::pianoRoll;
+        case keys::Context::mixer: return Panel::mixer;
+        case keys::Context::browser: return Panel::browser;
+        case keys::Context::playlist:
+        case keys::Context::global: break;
+    }
+    return Panel::playlist;
+}
+
 void MainComponent::dragOperationStarted (const juce::DragAndDropTarget::SourceDetails&)
 {
     // a drop on a window above this one (the Sampler's waveform, a plugin...) lands there, not on the panel under it
@@ -1170,22 +1222,39 @@ bool MainComponent::keyPressed (const juce::KeyPress& key)
 
     // 2. a key the user gave an action himself (Options › Shortcuts) wins over the panels' built-in keys
     // (issue #12: Metronome on 'C' did nothing while the Playlist, whose Knife is 'C', had the focus)
-    if (const auto own = keyMap.findUserBound (chord, focusContext(), typingPiano); ! own.empty() && runAction (own))
+    if (const auto own = keyMap.findUserBound (chord, focusContext(), typingPiano); ! own.empty() && runKeyAction (own))
         return true;
 
-    // 3. the focused panel's own keys
     const auto focused = workspace.getFocused();
     const auto panelShown = workspace.isPanelVisible (focused);
 
+    // 3. the screen reader layer (ui/Accessibility.h): its keys while it is on, and the key that turns it on or off;
+    // both come before the panels' own keys (the Piano Roll took Ctrl+Alt+Shift+A as Select all)
+    if (access.isOn())
+        if (const auto a = keyMap.findAccess (chord, panelShown ? focusContext() : keys::Context::global, typingPiano); ! a.empty() && runAction (a))
+            return true;
+
+    const auto action = keyMap.find (chord, focusContext(), typingPiano);
+    if (action == "access.toggle")
+        return runKeyAction (action);
+
+    // 4. the focused panel's own keys
     if (panelShown && focused == Panel::pianoRoll && pianoRoll.handleKey (key))
-        return true;
+        return access.afterPanelKey (chord, keys::Context::pianoRoll), true;
 
     if (panelShown && focused == Panel::playlist && playlist.handleKey (key))
-        return true;
+        return access.afterPanelKey (chord, keys::Context::playlist), true;
 
-    // 4. the key map
-    const auto action = keyMap.find (chord, focusContext(), typingPiano);
-    return ! action.empty() && runAction (action);
+    // 5. the key map
+    return ! action.empty() && runKeyAction (action);
+}
+
+bool MainComponent::runKeyAction (const std::string& id)
+{
+    if (! runAction (id))
+        return false;
+    access.afterAction (id, focusContext());
+    return true;
 }
 
 bool MainComponent::keyFromSecondaryWindow (const juce::KeyPress& key)
@@ -1193,13 +1262,15 @@ bool MainComponent::keyFromSecondaryWindow (const juce::KeyPress& key)
     // (round 165q / issue #12) a text field keeps its typing keys; the rest runs the global actions
     const auto typingIntoText = dynamic_cast<juce::TextEditor*> (juce::Component::getCurrentlyFocusedComponent()) != nullptr;
     const auto action = keyMap.findFromSecondaryWindow (chordFromKeyPress (key), typingIntoText, typingPiano);
-    return ! action.empty() && runAction (action);
+    return ! action.empty() && runKeyAction (action);
 }
 
 bool MainComponent::runAction (const std::string& id)
 {
     auto is = [&id] (const char* name) { return id == name; };
 
+    if (id.rfind ("access.", 0) == 0)
+        return access.run (id, focusContext());
     if (id == "rack.follow")
     {
         auto& g = EditorGlobals::get();
@@ -3224,6 +3295,7 @@ void MainComponent::timerCallback()
         masterPitch.update();
         updateRecordQuantise();
     }
+    access.update (focusContext());
 
     if (engine.isModified() != lastModified)
     {
@@ -4857,6 +4929,7 @@ juce::PopupMenu MainComponent::getMenuForIndex (int barIndex, const juce::String
                 engine.getPluginHost().startBackgroundScan(); // progress in the hint bar; LYNX stays usable
         });
         menu.addItem (tr ("Manage shortcuts..."), [this] { showShortcutManager(); });
+        menu.addItem (tr ("Accessibility settings..."), [this] { access.showSettings(); });
         menu.addItem (tr ("Plugin performance monitor..."), [this] { showPluginMonitor (engine); });
         menu.addSeparator();
         menu.addItem (tr ("Record input audio"), true, engine.isAudioRecordingArmed(), [this] {
@@ -5094,7 +5167,7 @@ std::unique_ptr<juce::Component> MainComponent::makeHelpContent (const keys::Key
     const auto& map = keyMapIn != nullptr ? *keyMapIn : defaults;
     std::vector<std::pair<juce::String, juce::String>> functionKeys;
     for (const auto& b : map.functionKeyBindings())
-        if (const auto* action = keys::findAction (b.actionId))
+        if (const auto* action = keys::findAction (b.actionId); action != nullptr && ! action->access) // (not the screen reader layer)
         {
             auto text = tr (action->description);
             if (b.context != keys::Context::global)

@@ -122,6 +122,23 @@ public:
     // hovers the right edge of the first clip in view (grip, outline, menu button); returns its hint
     ui::Hint hoverForSnapshot();
 
+    // Keyboard and screen reader access (ui/Accessibility.h): the current track (marked next to its LED), the
+    // selected clips, the item menus without a mouse position, and what a Pencil click on `track` at `start` places.
+    int getCurrentTrack() const noexcept { return currentTrack; }
+    void setCurrentTrack (int track);
+    int getNumTracks() const { return numTracks(); }
+    const std::vector<int>& getSelection() const noexcept { return selection; }
+    void setSelection (std::vector<int> indices);
+    void showClipMenuAt (int clip, std::int64_t tick);
+    void showTrackMenuAt (int track);
+    int placeBrushClip (int track, std::int64_t start); // the new clip's index (selected)
+    void sortClips (std::vector<int> placed = {});
+    void openClipSource (int clip, bool other); // double click: the clip's pattern / automation (Alt: the other editor)
+    void setTimeSelection (std::int64_t from, std::int64_t to); // also selects the clips it touches
+    void editTrack (int track, std::function<void (PlaylistTrack&)> change);
+    void pasteClips (std::int64_t at = -1);
+    std::int64_t gridTicks() const; // the grid step in use (resolving Screen / Nearest note)
+
     static constexpr int headerWidth = 96;
     static constexpr int toolbarHeight = 28;
     static constexpr int overviewHeight = 16; // the overview strip under the toolbar (round 90)
@@ -191,27 +208,24 @@ private:
     bool previewRestoreSong = false;
     int previewPatternBefore = -1;
     double previewPositionBefore = 0.0;
-    std::int64_t gridTicks() const; // the grid step in use (resolving Screen / Nearest note)
     std::int64_t snap (double tick, bool enabled) const;
     std::vector<std::int64_t> snapCandidates() const;
     int clipAt (int x, int y, bool& onRightEdge) const;
     int clipAt (int x, int y, bool& onRightEdge, bool& onLeftEdge) const;
     Clip makeBrushClip (int track, std::int64_t start) const; // what a click on empty space places
+    void useTrackPattern (int track); // an instrument track's own pattern becomes the current one (pattern brush)
     void cutWithKnife (juce::Point<int> from, juce::Point<int> to, bool snapOn);
     void zoomToTicks (double from, double to);
     void zoomIn (int anchorX);
     void zoomOut (int anchorX);
-    void setTimeSelection (std::int64_t from, std::int64_t to); // also selects the clips it touches
     void insertTimeSelection();
     void deleteTimeSelection();
     // fade handle of an audio clip under the mouse: 1 = fade-in, 2 = fade-out, 0 = none
     int fadeHandleAt (int clip, juce::Point<int> p) const;
     void updateScrollBars();
     bool isSelected (int index) const;
-    void setSelection (std::vector<int> indices);
     // sorts while keeping the selection (no undo step); `placed` = the clips the edit put somewhere (moved, painted,
     // pasted…): their audio clips follow an audio track (issue #15, trackmodes::followAudioTracks)
-    void sortClips (std::vector<int> placed = {});
     void askToMakeClipsUnique (std::vector<int> placed, std::vector<int> channels);
     void showClipMenu (int clip);
     void showRulerMenu (int x);                           // markers, time signature and loop
@@ -229,7 +243,6 @@ private:
     void moveTimeSelection (int direction);
     void deleteSelection();
     void copySelection();
-    void pasteClips (std::int64_t at = -1);
     void normalizeClips (const std::vector<int>& targets);
     juce::PopupMenu buildClipMenu (int index, int mouseX);
     void duplicateSelection();
@@ -246,7 +259,6 @@ private:
     void renameTrack (int track);
     void showTrackMenu (int track);
     juce::PopupMenu buildTrackMenu (int track);
-    void openClipSource (int clip, bool other); // double click: the clip's pattern / automation (Alt: the other editor)
     juce::Rectangle<int> trackLed (int track) const;   // the mute LED on the right of a header
     juce::Rectangle<int> trackArrow (int track) const; // a group header's fold arrow (empty for other tracks)
     // An audio track's buttons (FL 2026, issue #11), acting on its linked mixer track: "Arm/disarm recording" (left of
@@ -254,7 +266,6 @@ private:
     juce::Rectangle<int> trackArm (int track) const;
     juce::Rectangle<int> trackInput (int track) const;
     static constexpr int inputButtonMinHeight = 52; // FL shows the row of buttons from 150 % of its track height
-    void editTrack (int track, std::function<void (PlaylistTrack&)> change);
     int currentTrack = -1; // the track selected by a click on its header (FL marks it next to the LED)
     std::vector<int> selectedTracks; // Ctrl / Shift+click on headers: more selected tracks (round 165m)
     bool isTrackSelected (int track) const;

@@ -64,6 +64,9 @@ struct Action
     Context context;
     std::vector<Chord> defaults;
     bool whilePiano = false; // a plain printable key that keeps working while the typing piano is on
+    // Screen reader layer (ui/Accessibility.h): only looked up by findAccess, while accessibility mode is on, and
+    // before the panels' own keys. Its chords never clash with the other actions'.
+    bool access = false;
 };
 
 // The built-in actions with LYNX's default chords.
@@ -105,6 +108,9 @@ public:
     // the focus, so its unmodified letters, Space, arrows, Enter... stay text editing).
     std::string findFromSecondaryWindow (const Chord& chord, bool typingIntoText, bool typingPiano) const;
 
+    // Like find(), among the screen reader layer's actions only (Action::access).
+    std::string findAccess (const Chord& chord, Context focus, bool typingPiano) const;
+
     // True when the chord plays a note (piano on, unmodified, mapped key).
     static bool playsNote (const Chord& chord, bool typingPiano) noexcept;
 
@@ -139,6 +145,8 @@ public:
     std::vector<Binding> functionKeyBindings() const;
 
 private:
+    std::string match (const Chord& chord, Context focus, bool typingPiano, bool accessLayer) const;
+
     std::vector<std::vector<Chord>> chords; // parallel to actions()
 };
 

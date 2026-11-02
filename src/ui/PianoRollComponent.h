@@ -103,6 +103,16 @@ public:
     // zooms in (taller rows, wider steps) and hovers the right edge of the first note; returns its hint
     ui::Hint hoverForSnapshot();
 
+    // Keyboard and screen reader access (ui/Accessibility.h): the selected notes (indices into the current pattern),
+    // the grid and a new note's length, and the menus of the toolbar's buttons.
+    const std::vector<int>& getSelection() const noexcept { return selection; }
+    void setSelection (std::vector<int> indices);
+    std::int64_t gridTicks() const;        // the grid step in use (resolving Screen / Nearest note)
+    std::int64_t newNoteLength() const;
+    juce::PopupMenu toolsMenu();
+    juce::PopupMenu midiMenu();
+    juce::PopupMenu selectMenu();        // FL's Select submenu (invert, odd, random, muted, overlapping, stacked, colour)
+
     static constexpr int keyboardWidth = 72;
     static constexpr int toolbarHeight = 28;
     static constexpr int overviewHeight = 16; // the overview strip under the toolbar (round 90)
@@ -146,10 +156,8 @@ private:
     bool folded() const noexcept { return rows.count < 128; }
     bool ghostShown (int channel) const noexcept;
     void setGhostChannels (const std::function<bool (int channel, bool shown)>& show);
-    std::int64_t gridTicks() const;        // the grid step in use (resolving Screen / Nearest note)
     std::int64_t snap (double tick, bool enabled) const;
     std::int64_t viewLengthTicks() const;
-    std::int64_t newNoteLength() const;
     int noteAt (int x, int y, bool& onRightEdge) const;
     int noteAt (int x, int y, bool& onRightEdge, bool& onLeftEdge) const;
     int ghostAt (int x, int y) const;      // index of a ghost note (another channel) under the point
@@ -174,7 +182,6 @@ private:
     bool isSelected (int index) const;
     std::vector<int> channelNotes() const;           // indices of the channel's notes
     std::vector<int> selectionOrAll() const;         // selection, or all of the channel's notes if empty
-    void setSelection (std::vector<int> indices);
     void sortNotes();                                // sorts while keeping the selection (no undo step)
     void editNotes (const std::function<void (Pattern&)>& edit, bool undoable = true);
     void applyVelocity (int fromX, int toX, int y);
@@ -222,7 +229,6 @@ private:
     void showColourMenu();
     void colourSelection (int colour);   // one undo step
     void selectByColour (int colour);    // the channel's notes of that colour
-    juce::PopupMenu selectMenu();        // FL's Select submenu (invert, odd, random, muted, overlapping, stacked, colour)
     // chord readout (FL 2026's chord detection): the chord of the held MIDI / typing-piano keys, else of the
     // selected notes
     juce::Label chordLabel;
@@ -243,9 +249,7 @@ private:
     void zoomToSelection();
     void zoomAll();
     void centreOnPlayhead();
-    juce::PopupMenu toolsMenu();
     std::unique_ptr<juce::FileChooser> chooser;
-    juce::PopupMenu midiMenu();
 
     // hover: what a click would hit (drives the cursor, the highlight and the hint)
     struct Hover

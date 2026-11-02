@@ -138,6 +138,7 @@ public:
     void step (int delta, bool load);
     void loadSelected();
     juce::File getSelectedFile() const;
+    juce::String describeSelection() const; // the selected row's name (screen reader announcements)
     // Left / Right: close / open the selected folder (Left on a file goes to its folder)
     void openFolder (bool open);
 

@@ -632,6 +632,15 @@ public:
     }
 
     bool selectedIsFolder() const { return juce::isPositiveAndBelow (selected, (int) rows.size()) && rows[(std::size_t) selected]->folder; }
+    // the selected row as a screen reader says it: its name, and whether a folder is open
+    juce::String selectedLabel() const
+    {
+        if (! juce::isPositiveAndBelow (selected, (int) rows.size()))
+            return {};
+        const auto& n = *rows[(std::size_t) selected];
+        const auto name = n.label.isNotEmpty() ? n.label : n.file.getFileName();
+        return n.folder ? tr (n.expanded ? "{0}, open folder" : "{0}, closed folder", { name }) : name;
+    }
     int numRows() const { return (int) rows.size(); }
     int getSelectedRow() const { return selected; }
 
@@ -3705,6 +3714,11 @@ void BrowserComponent::step (int delta, bool load)
 
     if (load && file.existsAsFile() && onLoadIntoChannel)
         onLoadIntoChannel (file);
+}
+
+juce::String BrowserComponent::describeSelection() const
+{
+    return activeList().selectedLabel();
 }
 
 void BrowserComponent::openFolder (bool open)

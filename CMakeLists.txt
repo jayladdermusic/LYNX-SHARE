@@ -180,6 +180,7 @@ target_include_directories(lynx_core PUBLIC src third_party/sse2neon)
 # workflow shell (key map, workspace layout, rack operations)
 target_sources(lynx_core PRIVATE
     src/core/KeyMap.cpp
+    src/core/AccessNav.cpp
     src/core/PresetCycle.cpp
     src/core/Sfz.cpp
     src/core/Workspace.cpp
@@ -321,6 +322,7 @@ if(LYNX_BUILD_APP)
     target_sources(LYNX PRIVATE
         src/Main.cpp
         src/platform/FileTypes.cpp
+        src/platform/ScreenReader.cpp
         src/platform/CrashGuard.cpp
         src/platform/Paths.cpp
         src/platform/Package.cpp
@@ -348,6 +350,8 @@ if(LYNX_BUILD_APP)
         src/engine/MidiSyncIo.cpp
         src/engine/PreviewPlayer.cpp
         src/ui/MainComponent.cpp
+        src/ui/Accessibility.cpp
+        src/ui/AccessDialogs.cpp
         src/ui/ChannelRackComponent.cpp
         src/ui/PianoRollComponent.cpp
         src/ui/PlaylistComponent.cpp
