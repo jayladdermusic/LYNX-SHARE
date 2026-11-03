@@ -644,6 +644,14 @@ public:
     int numRows() const { return (int) rows.size(); }
     int getSelectedRow() const { return selected; }
 
+    bool showSelectedMenu()
+    {
+        if (! juce::isPositiveAndBelow (selected, (int) rows.size()))
+            return false;
+        showMenu (*rows[(std::size_t) selected]);
+        return true;
+    }
+
     void select (int row, bool preview)
     {
         row = rows.empty() ? -1 : juce::jlimit (0, (int) rows.size() - 1, row);
@@ -2623,6 +2631,10 @@ void BrowserComponent::addViewItems (juce::PopupMenu& menu)
         if (safe != nullptr)
             safe->showFoldersDialog();
     });
+    menu.addItem (tr ("Add folder..."), [safe] {
+        if (safe != nullptr)
+            safe->addUserFolder();
+    });
 }
 
 // --- the "Show folders" window (round 164) --------------------------------------------------------------
@@ -3730,6 +3742,26 @@ void BrowserComponent::openFolder (bool open)
 {
     if (! resultsView->isVisible())
         tree->openSelected (open);
+}
+
+bool BrowserComponent::togglePreview()
+{
+    if (isPreviewPlaying())
+    {
+        stopPreview();
+        return true;
+    }
+    const auto file = getSelectedFile();
+    if (! file.existsAsFile())
+        return false;
+    fileSelected (file, true);
+    return true;
+}
+
+void BrowserComponent::showSelectedMenu()
+{
+    if (! activeList().showSelectedMenu())
+        showViewMenu();
 }
 
 void BrowserComponent::loadSelected()

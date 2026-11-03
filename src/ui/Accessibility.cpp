@@ -624,6 +624,7 @@ bool AccessLayer::run (const std::string& id, Context focus)
     else if (id.rfind ("access.pianoRoll.", 0) == 0) return runPianoRoll (id.substr (17));
     else if (id.rfind ("access.rack.", 0) == 0) return runRack (id.substr (12));
     else if (id.rfind ("access.mixer.", 0) == 0) return runMixer (id.substr (13));
+    else if (id.rfind ("access.browser.", 0) == 0) return runBrowser (id.substr (15));
     else return false;
     return true;
 }
@@ -800,6 +801,38 @@ bool AccessLayer::runPianoRoll (const std::string& id)
     else
         return false;
     return true;
+}
+
+bool AccessLayer::runBrowser (const std::string& id)
+{
+    auto& browser = panels.browser;
+    if (id == "preview")
+    {
+        if (! browser.togglePreview())
+            speak (tr ("No file selected"));
+        return true;
+    }
+
+    const auto file = browser.getSelectedFile();
+    if (! file.existsAsFile())
+        return speak (tr ("No file selected")), true;
+    if (id == "toPlaylist")
+    {
+        const auto track = juce::jmax (0, panels.playlist.getCurrentTrack());
+        if (! BrowserComponent::isAudioFile (file) || ! panels.playlist.addAudioClipAt (file, playlistCursor, track))
+            return speak (tr ("Not an audio file")), true;
+        return speak (tr ("{0} added to {1}, {2}", { file.getFileNameWithoutExtension(), tr ("Track {0}", { juce::String (track + 1) }),
+                                                     positionText (playlistCursor) })), true;
+    }
+    if (id == "newChannel")
+    {
+        const auto channels = engine.getSong().channels.size();
+        browser.openFile (file);
+        if (engine.getSong().channels.size() > channels)
+            speak (channelText (engine.getSelectedChannel()));
+        return true;
+    }
+    return false;
 }
 
 bool AccessLayer::runRack (const std::string& id)
@@ -1019,6 +1052,8 @@ void AccessLayer::showContextMenu (Context focus)
         else
             panels.mixer.showTrackMenuHere (track);
     }
+    else if (focus == Context::browser)
+        panels.browser.showSelectedMenu();
     else
         speak (tr ("No menu here"));
 }
@@ -1307,6 +1342,8 @@ void AccessLayer::afterAction (const std::string& id, Context focus)
     }
     if (id == "browser.next" || id == "browser.previous" || id == "browser.openFolder" || id == "browser.closeFolder" || starts ("browser.swap"))
         return speak (panels.browser.describeSelection());
+    if (id == "browser.load" && panels.browser.getSelectedFile().existsAsFile()) // the channel that has it now
+        return speak (channelText (engine.getSelectedChannel()));
     if (starts ("rack.fillEach")) // the channel and how many steps it has now
     {
         const auto channel = engine.getSelectedChannel();

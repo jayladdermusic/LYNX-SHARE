@@ -18,11 +18,12 @@ void focusWhenShown (juce::Component& target)
     });
 }
 
-// Arrows step (JUCE's own keys); Page Up / Down move ten steps, Home / End go to the ends.
+// Arrows step (JUCE's own keys); Page Up / Down move ten steps, Home / End go to the ends. Unlike JUCE's sliders it
+// takes the keyboard, so Tab reaches it.
 class ValueSlider final : public juce::Slider
 {
 public:
-    ValueSlider() : juce::Slider (juce::Slider::LinearHorizontal, juce::Slider::NoTextBox) {}
+    ValueSlider() : juce::Slider (juce::Slider::LinearHorizontal, juce::Slider::NoTextBox) { setWantsKeyboardFocus (true); }
 
     bool keyPressed (const juce::KeyPress& key) override
     {

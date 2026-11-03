@@ -137,6 +137,9 @@ public:
     // Up/Down (load = false) or Shift+Up/Down (load = true); Enter = loadSelected()
     void step (int delta, bool load);
     void loadSelected();
+    void openFile (const juce::File& file); // what a double-click does (an audio file: a new Sampler channel)
+    bool togglePreview();                    // stops the preview, or plays the selected file; false: nothing to play
+    void showSelectedMenu();                 // the selected row's right-click menu (nothing selected: the options)
     juce::File getSelectedFile() const;
     juce::String describeSelection() const; // the selected row's name (screen reader announcements)
     // Left / Right: close / open the selected folder (Left on a file goes to its folder)
@@ -218,7 +221,6 @@ private:
     void addHideItem (juce::PopupMenu& menu, const juce::String& id, const juce::String& label);
     juce::String rootId (const juce::File& folder) const; // the root's id, empty if `folder` isn't a root
     juce::StringArray starred;
-    void openFile (const juce::File& file); // what a double-click does
     void fileSelected (const juce::File& file, bool preview);
     void showFolderMenu (const juce::File& folder, std::function<void()> expandAll = {});
     void showFileMenu (const juce::File& file);

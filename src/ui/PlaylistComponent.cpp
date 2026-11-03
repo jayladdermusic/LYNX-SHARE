@@ -5231,7 +5231,12 @@ void PlaylistComponent::addAudioClipAtPlayhead (const juce::File& file)
         if (! busy)
             break;
     }
-    addAudioClip (engine, file, start, track, true);
+    addAudioClipAt (file, start, track);
+}
+
+bool PlaylistComponent::addAudioClipAt (const juce::File& file, std::int64_t start, int track)
+{
+    return addAudioClip (engine, file, start, track, true);
 }
 
 void PlaylistComponent::glideBy (double ticks, double pixels)

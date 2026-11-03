@@ -304,6 +304,9 @@ std::vector<Action> makeActions()
     access ("access.previousMarker", TR_NOOP ("Go to the previous marker"), Context::global, { chord (left, alt | shift) });
     access ("access.nextMarker", TR_NOOP ("Go to the next marker"), Context::global, { chord (right, alt | shift) });
 
+    access ("access.browser.preview", TR_NOOP ("Play or stop the preview"), Context::browser, { chord (space) });
+    access ("access.browser.toPlaylist", TR_NOOP ("Add the file to the Playlist at the cursor"), Context::browser, { chord (enter, alt) });
+    access ("access.browser.newChannel", TR_NOOP ("Open the file in a new channel"), Context::browser, { chord (enter, ctrl) });
     access ("access.playlist.previousTrack", TR_NOOP ("Previous track"), Context::playlist, { chord (up) });
     access ("access.playlist.nextTrack", TR_NOOP ("Next track"), Context::playlist, { chord (down) });
     access ("access.playlist.left", TR_NOOP ("Move the cursor one grid step left"), Context::playlist, { chord (left) });

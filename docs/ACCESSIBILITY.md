@@ -106,9 +106,26 @@ To route a channel to an insert of your choice: select it in the Channel Rack an
 
 The parameters of a mixer track list volume, pan, stereo separation, mute, solo, phase, channel swap and its sends. The parameters of an effect slot list on/off, mix and every parameter of the effect.
 
+## Browser
+
+| Key | Action |
+| --- | --- |
+| Up / Down | Previous / next file or folder (a sample plays as a preview) |
+| Left / Right | Close / open the folder |
+| Space | Play or stop the preview |
+| Enter | Load the file into the selected channel |
+| Shift+Up / Down | Load the previous / next file into the selected channel |
+| Ctrl+Enter | Open the file in a new channel (a sample: a new Sampler) |
+| Alt+Enter | Add the sample to the Playlist: at the Playlist cursor, on its current track |
+| Ctrl+F | Search |
+
+The menu of the current item (Shift+F10) has the file's other actions. With nothing selected it opens the Browser's options, which have Add folder... and Show folders... (the folders the Browser lists).
+
+Ctrl+Space plays or pauses the project while the Browser has the focus.
+
 ## Parameter dialog
 
-A filter field, the parameter list, a value slider and a field to type a value. Arrows step the value, Page Up / Down move ten steps, Home / End go to the ends. Typed values use the same units as the reading (for example `-6 dB`, `C5`, `40% left`).
+A filter field, the parameter list, a value slider and a field to type a value; Tab moves between them. On the slider, arrows step the value, Page Up / Down move ten steps, Home / End go to the ends. Typed values use the same units as the reading (for example `-6 dB`, `C5`, `40% left`).
 
 ## Settings
 

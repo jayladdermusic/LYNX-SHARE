@@ -2213,8 +2213,7 @@ void MainComponent::addPanelMenuItems (Panel panel, juce::PopupMenu& menu)
             break;
         case Panel::browser:
             action (menu, "browser.search", tr ("Search the Browser"));
-            browser.addViewItems (menu); // what it lists, which folders it shows (round 163)
-            menu.addItem (tr ("Add folder..."), [this] { browser.addUserFolder(); });
+            browser.addViewItems (menu); // what it lists, which folders it shows, Add folder... (round 163)
             action (menu, "view.sampleBrowser", tr ("Sample browser (separate window)"));
             menu.addSeparator();
             // the search index (round 162, issue #9): searches read it; it follows changed folders by itself

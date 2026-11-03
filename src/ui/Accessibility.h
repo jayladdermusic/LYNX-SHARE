@@ -109,6 +109,7 @@ private:
     bool runPlaylist (const std::string& id);
     bool runPianoRoll (const std::string& id);
     bool runRack (const std::string& id);
+    bool runBrowser (const std::string& id);
     bool runMixer (const std::string& id);
     void jumpToMarker (int direction);
     void toggleMute (keys::Context focus);

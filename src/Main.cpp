@@ -3164,6 +3164,10 @@ private:
                         press (juce::KeyPress::F6Key);
                         press ('2', juce::ModifierKeys (juce::ModifierKeys::altModifier | juce::ModifierKeys::shiftModifier));
                         check ("Alt+Shift+2: fill each 2 steps", spoken().matchesWildcard ("*" + tr ("{0} notes", { "*" }), false));
+                        press (juce::KeyPress::F8Key, juce::ModifierKeys::altModifier);
+                        press (' ');
+                        check ("Browser: Space is the preview's (nothing selected), not the transport",
+                               spoken() == tr ("No file selected") && ! engine->getTransport().playing.load());
                         toggleLayer();
                         check ("layer: off by its key", ! ui->getAccessLayerForTest().isOn());
                         stopTimer();

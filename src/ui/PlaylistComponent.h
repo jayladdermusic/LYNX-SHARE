@@ -111,6 +111,7 @@ public:
     // The Browser's "Send to the Playlist as an audio clip": at the playhead (song mode) or the start, on the
     // first track that is free there; an audio-clip channel of the same file is reused.
     void addAudioClipAtPlayhead (const juce::File& file);
+    bool addAudioClipAt (const juce::File& file, std::int64_t start, int track); // false: not a readable audio file
 
     // For snapshots: the tool in use and a time selection over [fromBar, toBar).
     void setToolForSnapshot (EditTool tool) { tools.setTool (tool); }
