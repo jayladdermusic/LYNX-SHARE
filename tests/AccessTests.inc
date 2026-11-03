@@ -94,3 +94,28 @@ TEST (audio_offsets_keep_their_time_when_the_tempo_changes)
     CHECK (s.playlist[1].offset == 2 * ppq);
     CHECK (s.playlist[0].length == 4 * ppq); // the clip's place in the song stays
 }
+
+TEST (a_split_clip_made_unique_merges_back)
+{
+    using namespace lynx;
+    Song s;
+    s.channels.resize (1);
+    s.channels[0].instrument = InstrumentKind::audioClip;
+    s.channels[0].samplePath = "loop.wav";
+    Clip whole;
+    whole.kind = ClipKind::audio;
+    whole.channel = 0;
+    whole.length = 4 * ppq;
+    s.playlist = { whole };
+    s.playlist.push_back (splitClip (s.playlist[0], ppq));
+    s.channels.push_back (s.channels[0]); // the second part made unique
+    s.playlist[1].channel = 1;
+
+    const auto run = clipops::continuingRun (s, 1); // from the second part: both
+    CHECK (run.size() == 2 && run.front() == 0);
+    s.channels[1].sampler.pitch = 3.0f; // sounds different now: not the same audio
+    CHECK (clipops::continuingRun (s, 1).size() == 1);
+    s.channels[1].sampler.pitch = 0.0f;
+    CHECK (clipops::mergeClips (s, run));
+    CHECK (s.playlist.size() == 1 && s.playlist[0].length == 4 * ppq && s.playlist[0].channel == 0);
+}

@@ -4021,9 +4021,11 @@ juce::PopupMenu PlaylistComponent::buildClipMenu (int index, int mouseX)
             chop.addItem (tr (label), [chopBy, t = ticks] { chopBy (t); });
         menu.addSubMenu (tr ("Chop"), chop);
     }
-    menu.addItem (tr ("Merge clips"), clipops::canMerge (song, targets), false, [this, targets] {
+    // one clip: with the clips around it that continue it (a split clip, put back together)
+    const auto toMerge = targets.size() > 1 ? targets : clipops::continuingRun (song, index);
+    menu.addItem (tr ("Merge clips"), clipops::canMerge (song, toMerge), false, [this, toMerge] {
         setSelection ({});
-        engine.editSong ([targets] (Song& s) { clipops::mergeClips (s, targets); });
+        engine.editSong ([toMerge] (Song& s) { clipops::mergeClips (s, toMerge); });
         sortClips();
     });
 

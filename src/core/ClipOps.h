@@ -363,10 +363,25 @@ inline int makeAudioUnique (Song& song, const std::vector<int>& clips)
     return channel;
 }
 
+// Two audio channels that sound the same: the same file, played the same way (an audio clip made unique — on an audio
+// track, or by its menu — is still the part of the file it was).
+inline bool sameAudio (const Song& song, int a, int b) noexcept
+{
+    if (a == b)
+        return true;
+    if (a < 0 || b < 0 || a >= (int) song.channels.size() || b >= (int) song.channels.size())
+        return false;
+    const auto& x = song.channels[(std::size_t) a];
+    const auto& y = song.channels[(std::size_t) b];
+    return x.instrument == y.instrument && x.samplePath == y.samplePath && x.mixerTrack == y.mixerTrack && x.misc.fineTune == y.misc.fineTune
+           && x.sampler.pitch == y.sampler.pitch && x.sampler.keepPitch == y.sampler.keepPitch && x.sampler.stretchBeats == y.sampler.stretchBeats
+           && x.sampler.reverse == y.sampler.reverse;
+}
+
 // Merge: clips of the same source on the same track that continue each other (each starts where the previous
-// ends, and its offset continues the previous one's) become one clip. Fades at the joins are dropped; the
-// first clip's fade-in and the last one's fade-out are kept. Gains and mutes must agree. Returns true if
-// anything merged.
+// ends, and its offset continues the previous one's) become one clip, on the first clip's source. Fades at the joins
+// are dropped; the first clip's fade-in and the last one's fade-out are kept. Gains and mutes must agree. Returns true
+// if anything merged.
 inline bool canMerge (const Song& song, const std::vector<int>& clips)
 {
     if (clips.size() < 2)
@@ -388,7 +403,7 @@ inline bool canMerge (const Song& song, const std::vector<int>& clips)
         const auto& a = list[i - 1];
         const auto& b = list[i];
         if (b.kind != f.kind || b.track != f.track || b.muted != f.muted || std::abs (b.gain - f.gain) > 1.0e-6f
-            || (f.kind == ClipKind::pattern && b.pattern != f.pattern) || (f.kind == ClipKind::audio && b.channel != f.channel))
+            || (f.kind == ClipKind::pattern && b.pattern != f.pattern) || (f.kind == ClipKind::audio && ! sameAudio (song, b.channel, f.channel)))
             return false;
         if (b.start != a.end() || b.offset != a.offset + a.length)
             return false;
@@ -412,6 +427,25 @@ inline bool mergeClips (Song& song, std::vector<int> clips)
         song.playlist.erase (song.playlist.begin() + i);
     song.playlist.push_back (merged);
     return true;
+}
+
+// The clips that `clip` and its neighbours on the track make, continuing each other (as canMerge), in time order.
+inline std::vector<int> continuingRun (const Song& song, int clip)
+{
+    if (clip < 0 || clip >= (int) song.playlist.size())
+        return {};
+    std::vector<int> onTrack;
+    for (int i = 0; i < (int) song.playlist.size(); ++i)
+        if (song.playlist[(std::size_t) i].track == song.playlist[(std::size_t) clip].track)
+            onTrack.push_back (i);
+    std::sort (onTrack.begin(), onTrack.end(), [&song] (int a, int b) { return song.playlist[(std::size_t) a].start < song.playlist[(std::size_t) b].start; });
+    const auto at = (std::size_t) (std::find (onTrack.begin(), onTrack.end(), clip) - onTrack.begin());
+    auto from = at, to = at;
+    while (from > 0 && canMerge (song, { onTrack[from - 1], onTrack[from] }))
+        --from;
+    while (to + 1 < onTrack.size() && canMerge (song, { onTrack[to], onTrack[to + 1] }))
+        ++to;
+    return { onTrack.begin() + (std::ptrdiff_t) from, onTrack.begin() + (std::ptrdiff_t) to + 1 };
 }
 
 // FL's track menu "Merge clips" (REA round 143): on `track`, every run of clips that continue each other (same

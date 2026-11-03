@@ -3084,7 +3084,9 @@ private:
                                 transport = c;
                         check ("toolbar: the Transport group holds its controls", transport != nullptr && transport->getNumChildComponents() == 8);
                         check ("layer: off without a screen reader", ! ui->getAccessLayerForTest().isOn());
-                        check ("a check box takes Space", static_cast<juce::Component&> (checkBox).keyPressed (juce::KeyPress (juce::KeyPress::spaceKey)));
+                        check ("a check box takes Space, and leaves Return to the dialog's default button",
+                               static_cast<juce::Component&> (checkBox).keyPressed (juce::KeyPress (juce::KeyPress::spaceKey))
+                                   && ! static_cast<juce::Component&> (checkBox).keyPressed (juce::KeyPress (juce::KeyPress::returnKey)));
                         toggleLayer();
                         check ("layer: on by its key", ui->getAccessLayerForTest().isOn() && spoken() == tr ("Accessibility mode on"));
                         press (juce::KeyPress::F5Key); // (the Channel Rack has the focus at first)
