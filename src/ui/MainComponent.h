@@ -485,7 +485,8 @@ private:
     MixerComponent mixer;
     BrowserComponent browser;
     Workspace workspace; // after the panels' contents: it is destroyed first
-    AccessLayer access { engine, { playlist, pianoRoll, rack, mixer, browser, menuBar, [this] (keys::Context c) { workspace.activate (panelOf (c)); } }, persistent };
+    AccessLayer access { engine, { playlist, pianoRoll, rack, mixer, browser, menuBar, [this] (keys::Context c) { workspace.activate (panelOf (c)); },
+                                         [this] (double tick) { playStartTicks = tick; engine.seek (tick); } }, persistent };
     static Panel panelOf (keys::Context context); // (focusContext the other way round)
     updater::UpdateBar updateBar; // "LYNX SHARE x.y.z is available" under the toolbar (round 166b)
     std::unique_ptr<juce::Component> danceStage; // the dance channels' dancers over the workspace (ui/DanceView.h, round 165e)

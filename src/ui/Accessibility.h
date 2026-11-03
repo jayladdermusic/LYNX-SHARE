@@ -31,6 +31,7 @@ public:
         BrowserComponent& browser;
         juce::MenuBarComponent& menuBar;
         std::function<void (keys::Context)> activate; // makes a panel the focused one (as a click on it)
+        std::function<void (double)> playFrom;        // the playhead goes there, and Space's stop comes back to it
     };
 
     // Saved in <settings>/accessibility.json.
@@ -104,6 +105,7 @@ private:
     // cursors
     std::int64_t cursorOf (keys::Context focus) const;
     void moveCursor (keys::Context focus, std::int64_t tick);
+    void followCursor (keys::Context focus, std::int64_t tick);
     std::int64_t barTicksAt (std::int64_t tick) const;
     int currentClip() const; // the clip Tab reached while it is still the only one selected, else -1
     bool runPlaylist (const std::string& id);

@@ -27,6 +27,8 @@
 # 7. Every platform, juce_gui_basics/accessibility/juce_AccessibilityHandler.cpp: every plain component (no role, no
 #    name) was an unnamed "group" for VoiceOver and NVDA, about forty in the main window alone. Such a component is
 #    left out now unless it is a focus container (a real group); the controls it holds are still listed.
+# 8. Every platform, juce_gui_basics/buttons/juce_Button.cpp: a focused check box or toggle took only Return, so Space
+#    (the key a Mac check box answers to, what VoiceOver users press) did nothing and the dialog's OK applied it unticked.
 #
 # Used by CMake (lynx_patch_juce on the fetched JUCE) and by scripts/build-windows-zig.sh, which runs this file with
 # `cmake -DJUCE_DIR=<a copy of JUCE's juce_gui_basics module> -P cmake/LynxPatchJuce.cmake`.
@@ -82,6 +84,10 @@ function(lynx_patch_juce_file file)
         lynx_juce_fix("no unnamed groups" "LYNX patch: a plain component"
             "    return role == AccessibilityRole::ignored || getCurrentState().isIgnored();"
             "    // LYNX patch: a plain component (no role, no name, not a focus container) is no group for a screen reader|NL|    return role == AccessibilityRole::ignored || getCurrentState().isIgnored()|NL|           || (role == AccessibilityRole::unspecified && ! component.isFocusContainer() && getTitle().isEmpty());")
+    elseif(file MATCHES "juce_Button.cpp$")
+        lynx_juce_fix("Space toggles a check box" "LYNX patch: Space toggles"
+            "    if (isEnabled() && key.isKeyCode (KeyPress::returnKey))|NL|    {|NL|        triggerClick();"
+            "    // LYNX patch: Space toggles a focused check box or toggle, as on a Mac|NL|    if (isEnabled() && (key.isKeyCode (KeyPress::returnKey) || (getClickingTogglesState() && key == KeyPress (KeyPress::spaceKey))))|NL|    {|NL|        triggerClick();")
     elseif(file MATCHES "juce_MainMenu_mac.mm$")
         lynx_juce_fix("menu shortcuts on the right" "LYNX patch: Name<Tab>Shortcut"
             "                                            keyEquivalent: nsEmptyString()];|NL||NL|            [item setTag: topLevelIndex];"
@@ -104,6 +110,7 @@ function(lynx_patch_juce juce_dir)
     lynx_patch_juce_file("${juce_dir}/modules/juce_gui_basics/menus/juce_PopupMenu.cpp")
     lynx_patch_juce_file("${juce_dir}/modules/juce_gui_basics/native/juce_MainMenu_mac.mm")
     lynx_patch_juce_file("${juce_dir}/modules/juce_gui_basics/accessibility/juce_AccessibilityHandler.cpp")
+    lynx_patch_juce_file("${juce_dir}/modules/juce_gui_basics/buttons/juce_Button.cpp")
 endfunction()
 
 # run as a script: cmake -DJUCE_DIR=<dir> -P cmake/LynxPatchJuce.cmake

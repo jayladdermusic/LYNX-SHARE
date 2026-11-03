@@ -3031,6 +3031,7 @@ private:
             std::unique_ptr<lynx::AudioEngine> engine;
             juce::Component window; // a native window that is never shown: the screen reader's tree needs one
             std::unique_ptr<lynx::MainComponent> ui;
+            juce::ToggleButton checkBox; // (Button::keyPressed is protected: called through Component)
             std::function<void()> done;
 
             // The tree a screen reader gets, one element a line (role number, name, value), indented by nesting; counts
@@ -3083,6 +3084,7 @@ private:
                                 transport = c;
                         check ("toolbar: the Transport group holds its controls", transport != nullptr && transport->getNumChildComponents() == 8);
                         check ("layer: off without a screen reader", ! ui->getAccessLayerForTest().isOn());
+                        check ("a check box takes Space", static_cast<juce::Component&> (checkBox).keyPressed (juce::KeyPress (juce::KeyPress::spaceKey)));
                         toggleLayer();
                         check ("layer: on by its key", ui->getAccessLayerForTest().isOn() && spoken() == tr ("Accessibility mode on"));
                         press (juce::KeyPress::F5Key); // (the Channel Rack has the focus at first)
@@ -3090,6 +3092,7 @@ private:
                     }
                     case 1:
                     {
+                        check ("a check box: Space ticks it", checkBox.getToggleState()); // (a click is delivered asynchronously)
                         auto& root = *window.getAccessibilityHandler();
                         juce::String tree;
                         int unnamed = 0;
@@ -3200,6 +3203,17 @@ private:
                         press ('p', juce::ModifierKeys (juce::ModifierKeys::altModifier | juce::ModifierKeys::shiftModifier));
                         check ("Playlist: after a pause the cursor is where it paused",
                                ! engine->getTransport().playing.load() && spoken() == tr ("Bar {0} beat {1}", { "3", "2" }));
+                        press (' '); // play from there
+                        press (juce::KeyPress::rightKey, juce::ModifierKeys::altModifier);
+                        check ("Playlist: moving the cursor while playing jumps playback there",
+                               engine->getTransport().playing.load() && engine->getTransport().seekRequest.load() == 3.0 * 4 * lynx::ppq);
+                        press (' '); // stop: back to where the cursor moved, not where playback started
+                        check ("Playlist: then Space stops and goes back to the cursor",
+                               ! engine->getTransport().playing.load() && engine->getTransport().seekRequest.load() == 3.0 * 4 * lynx::ppq);
+                        break;
+                    case 6:
+                        press ('p', juce::ModifierKeys (juce::ModifierKeys::altModifier | juce::ModifierKeys::shiftModifier));
+                        check ("Playlist: the cursor stays there after the stop", spoken() == tr ("Bar {0} beat {1}", { "4", "1" }));
                         toggleLayer();
                         check ("layer: off by its key", ! ui->getAccessLayerForTest().isOn());
                         stopTimer();

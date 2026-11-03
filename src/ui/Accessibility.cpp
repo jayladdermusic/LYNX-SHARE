@@ -547,15 +547,20 @@ std::int64_t AccessLayer::cursorOf (Context focus) const
     return (std::int64_t) engine.getTransport().positionTicks.load();
 }
 
+// In the mode this panel plays, the playhead follows its cursor: stopped, Space plays from there; playing, playback
+// jumps there. Either way Space's stop comes back to it.
+void AccessLayer::followCursor (Context focus, std::int64_t tick)
+{
+    if ((engine.getSong().mode == PlayMode::song) == (focus == Context::playlist))
+        panels.playFrom ((double) tick);
+}
+
 void AccessLayer::moveCursor (Context focus, std::int64_t tick)
 {
     tick = std::max<std::int64_t> (0, tick);
     (focus == Context::playlist ? playlistCursor : pianoCursor) = tick;
 
-    // stopped in the mode this panel plays, the playhead follows (Space plays from the cursor)
-    const auto songPanel = focus == Context::playlist;
-    if (! engine.getTransport().playing.load() && (engine.getSong().mode == PlayMode::song) == songPanel)
-        engine.seek ((double) tick);
+    followCursor (focus, tick);
 
     if (! settings.reportMoves)
         return;
@@ -673,8 +678,7 @@ bool AccessLayer::runPlaylist (const std::string& id)
         playlist.setSelection ({ clip });
         tabbedClip = clip;
         playlistCursor = song.playlist[(std::size_t) clip].start;
-        if (! engine.getTransport().playing.load() && song.mode == PlayMode::song)
-            engine.seek ((double) playlistCursor);
+        followCursor (Context::playlist, playlistCursor);
         speak (clipText (clip));
     }
     else if (id == "split")
@@ -966,10 +970,7 @@ void AccessLayer::jumpToMarker (int direction)
         return speak (tr ("No more markers"));
     const auto name = found->name.empty() ? tr ("Marker") : utf8 (found->name);
     playlistCursor = found->tick;
-    if (engine.getTransport().playing.load())
-        engine.jumpTo ((double) found->tick);
-    else if (engine.getSong().mode == PlayMode::song)
-        engine.seek ((double) found->tick);
+    followCursor (Context::playlist, playlistCursor);
     speak (name + ", " + positionText (found->tick));
 }
 
