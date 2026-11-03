@@ -176,6 +176,18 @@ void AccessLayer::update (Context focus)
         readerRunning = platform::screenReaderRunning();
     }
 
+    // stopped or paused: the cursor of what played (the Playlist in song mode, else the Piano Roll) goes where the
+    // playhead is now (a pause: where it paused; a stop: where playback goes back to, maybe a jump not done yet)
+    const auto& transport = engine.getTransport();
+    const auto playing = transport.playing.load();
+    if (wasPlaying && ! playing)
+    {
+        const auto jump = transport.seekRequest.load();
+        (engine.getSong().mode == PlayMode::song ? playlistCursor : pianoCursor)
+            = std::max<std::int64_t> (0, (std::int64_t) (jump >= 0.0 ? jump : transport.positionTicks.load()));
+    }
+    wasPlaying = playing;
+
     attachFocusTargets (isOn());
     if (! isOn())
     {

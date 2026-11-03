@@ -2194,8 +2194,10 @@ void AudioEngine::editSong (const std::function<void (Song&)>& edit, bool undoab
         modified = true;
 
     const auto lengthsBefore = patternLengths (song);
+    const auto bpmBefore = song.bpm;
     edit (song);
     followPatternLengths (lengthsBefore, song);
+    clipops::keepAudioOffsetsInTime (song, bpmBefore);
     clipops::updateCrossfades (song); // FL's automatic crossfades follow every edit (round 166e)
     publishSong();
 }

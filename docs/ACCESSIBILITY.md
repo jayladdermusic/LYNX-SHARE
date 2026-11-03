@@ -60,7 +60,7 @@ The keyboard follows the VoiceOver cursor onto the toolbar controls: there the a
 | [ / ] | Start / end the time selection at the cursor |
 | Alt+Shift+Up / Down | Coarser / finer grid |
 
-While stopped in song mode the playhead follows the cursor, so Space plays from there. The usual Delete, Ctrl+C, Ctrl+X, Ctrl+B and Ctrl+A act on the selected clips and are reported.
+While stopped in song mode the playhead follows the cursor, so Space plays from there. When playback stops or pauses, the cursor moves to where it stopped (in pattern mode, the Piano Roll's cursor). The usual Delete, Ctrl+C, Ctrl+X, Ctrl+B and Ctrl+A act on the selected clips and are reported.
 
 ## Piano Roll
 

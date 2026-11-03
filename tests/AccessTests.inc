@@ -71,3 +71,26 @@ TEST (access_clips_and_chords_in_order)
     CHECK (accessnav::noteAt (p, 0, 60, 239) == 1);
     CHECK (accessnav::noteAt (p, 0, 60, 240) == -1);
 }
+
+TEST (audio_offsets_keep_their_time_when_the_tempo_changes)
+{
+    using namespace lynx;
+    Song s;
+    s.bpm = 120.0;
+    s.channels.resize (2);
+    s.channels[1].sampler.stretchBeats = 8.0f; // follows the tempo
+    Clip own, stretched;
+    own.kind = stretched.kind = ClipKind::audio;
+    own.channel = 0;
+    stretched.channel = 1;
+    own.offset = stretched.offset = 2 * ppq; // one second at 120 BPM
+    own.length = stretched.length = 4 * ppq;
+    s.playlist = { own, stretched };
+
+    s.bpm = 90.0;
+    clipops::keepAudioOffsetsInTime (s, 120.0);
+    const auto seconds = ((double) s.playlist[0].offset + (double) s.playlist[0].offsetFraction) * 60.0 / (s.bpm * ppq);
+    CHECK (std::abs (seconds - 1.0) < 1e-6);
+    CHECK (s.playlist[1].offset == 2 * ppq);
+    CHECK (s.playlist[0].length == 4 * ppq); // the clip's place in the song stays
+}

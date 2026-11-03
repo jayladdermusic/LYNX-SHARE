@@ -138,6 +138,7 @@ private:
     mutable juce::String lastSpoken;
     bool readerRunning = false;
     int readerCheck = 0;
+    bool wasPlaying = false;
     keys::Context lastFocus = keys::Context::global, lastKeyboardPanel = keys::Context::global;
     std::vector<std::unique_ptr<PanelFocus>> focusTargets; // while on: one per panel
     juce::Component::SafePointer<juce::Component> lastWindow;

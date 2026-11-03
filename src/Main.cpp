@@ -3186,6 +3186,20 @@ private:
                         press (' ');
                         check ("Browser: Space is the preview's (nothing selected), not the transport",
                                spoken() == tr ("No file selected") && ! engine->getTransport().playing.load());
+                        press (juce::KeyPress::F5Key);
+                        engine->editSong ([] (lynx::Song& s) { s.mode = lynx::PlayMode::song; }, false);
+                        engine->play();
+                        // bar 3 beat 2, as the audio thread would leave it (none here: it would also have taken the jumps asked for)
+                        engine->getTransport().seekRequest.store (-1.0);
+                        engine->getTransport().positionTicks.store ((double) (2 * 4 + 1) * lynx::ppq);
+                        break;
+                    case 4:
+                        press (' ', juce::ModifierKeys::commandModifier); // pause
+                        break;
+                    case 5:
+                        press ('p', juce::ModifierKeys (juce::ModifierKeys::altModifier | juce::ModifierKeys::shiftModifier));
+                        check ("Playlist: after a pause the cursor is where it paused",
+                               ! engine->getTransport().playing.load() && spoken() == tr ("Bar {0} beat {1}", { "3", "2" }));
                         toggleLayer();
                         check ("layer: off by its key", ! ui->getAccessLayerForTest().isOn());
                         stopTimer();

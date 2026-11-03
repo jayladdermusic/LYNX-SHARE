@@ -258,6 +258,28 @@ inline void updateCrossfades (Song& song)
     song.forEachClipList ([on = song.autoCrossfades] (std::vector<Clip>& clips) { updateCrossfades (clips, on); });
 }
 
+// After a tempo change from `oldBpm`: audio that plays at its own speed starts at the same point of its file (FL keeps
+// these offsets in milliseconds; LYNX's are ticks, read at the song's tempo). A channel that follows the tempo
+// (Stretch) keeps its offsets in ticks.
+inline void keepAudioOffsetsInTime (Song& song, double oldBpm)
+{
+    if (oldBpm <= 0.0 || song.bpm <= 0.0 || song.bpm == oldBpm)
+        return;
+    const auto ratio = song.bpm / oldBpm;
+    const auto& channels = song.channels;
+    song.forEachClipList ([&channels, ratio] (std::vector<Clip>& clips) {
+        for (auto& c : clips)
+        {
+            if (c.kind != ClipKind::audio || (c.offset == 0 && c.offsetFraction == 0.0f) || c.channel < 0 || c.channel >= (int) channels.size()
+                || channels[(std::size_t) c.channel].sampler.stretchBeats > 0.0f)
+                continue;
+            const auto ticks = ((double) c.offset + (double) c.offsetFraction) * ratio;
+            c.offset = (std::int64_t) std::llround (ticks);
+            c.offsetFraction = (float) (ticks - (double) c.offset);
+        }
+    });
+}
+
 // FL's crossfade curve (round 166e): an S (raised cosine) whose fade-in and fade-out add up to 1 at every point.
 inline float crossfadeCurve (float x) noexcept
 {
