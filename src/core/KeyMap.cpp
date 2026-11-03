@@ -320,6 +320,8 @@ std::vector<Action> makeActions()
     access ("access.playlist.previousClip", TR_NOOP ("Previous clip on the track"), Context::playlist, { chord (tab, shift) });
     access ("access.playlist.nextClip", TR_NOOP ("Next clip on the track"), Context::playlist, { chord (tab) });
     access ("access.playlist.open", TR_NOOP ("Open the current clip"), Context::playlist, { chord (enter) });
+    access ("access.playlist.split", TR_NOOP ("Split the clip at the cursor"), Context::playlist, { chord ('E', ctrl) });
+    access ("access.playlist.paste", TR_NOOP ("Paste at the cursor, on the current track"), Context::playlist, { chord ('V', ctrl) });
     access ("access.playlist.place", TR_NOOP ("Place the current pattern or brush at the cursor"), Context::playlist, { chord (enter, alt) });
     access ("access.playlist.selectionStart", TR_NOOP ("Start the time selection at the cursor"), Context::playlist, { chord ('[') });
     access ("access.playlist.selectionEnd", TR_NOOP ("End the time selection at the cursor"), Context::playlist, { chord (']') });

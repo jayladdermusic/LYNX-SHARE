@@ -665,6 +665,26 @@ bool AccessLayer::runPlaylist (const std::string& id)
             engine.seek ((double) playlistCursor);
         speak (clipText (clip));
     }
+    else if (id == "split")
+    {
+        const auto current = currentClip();
+        const auto inCurrent = current >= 0 && song.playlist[(std::size_t) current].start < playlistCursor
+                               && song.playlist[(std::size_t) current].end() > playlistCursor;
+        const auto clip = inCurrent ? current : accessnav::clipAt (song.playlist, track, playlistCursor);
+        const auto rest = clip < 0 ? -1 : playlist.splitClipAt (clip, playlistCursor);
+        if (rest < 0)
+            return speak (tr ("No clip to split at the cursor")), true;
+        tabbedClip = rest;
+        speak (tr ("Split: {0}", { clipText (rest) }));
+    }
+    else if (id == "paste")
+    {
+        const auto pasted = playlist.pasteClips (playlistCursor, track);
+        if (pasted == 0)
+            return speak (tr ("Nothing to paste")), true;
+        tabbedClip = pasted == 1 ? playlist.getSelection().front() : -1;
+        speak (tr ("Pasted {0}", { pasted == 1 ? clipText (tabbedClip) : tr ("{0} clips", { juce::String (pasted) }) }));
+    }
     else if (id == "open")
     {
         const auto clip = currentClip() >= 0 ? currentClip() : accessnav::clipAt (song.playlist, track, playlistCursor);

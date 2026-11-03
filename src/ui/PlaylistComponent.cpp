@@ -3995,12 +3995,8 @@ juce::PopupMenu PlaylistComponent::buildClipMenu (int index, int mouseX)
     // --- cutting and joining -------------------------------------------------------------------------
     const auto splitAt = snap (xToTick (mouseX) + gridTicks() / 2.0, true);
     menu.addItem (tr ("Split here"), splitAt > clip.start && splitAt < clip.end(), false, [this, index, splitAt] {
+        splitClipAt (index, splitAt);
         setSelection ({});
-        engine.editSong ([index, splitAt] (Song& s) {
-            if (index < (int) s.playlist.size() && splitAt > s.playlist[(std::size_t) index].start && splitAt < s.playlist[(std::size_t) index].end())
-                s.playlist.push_back (splitClip (s.playlist[(std::size_t) index], splitAt));
-        });
-        sortClips();
     });
     {
         // FL's "Chop" submenu: to the grid, or in bars / beats / parts of a beat
@@ -4655,21 +4651,26 @@ void PlaylistComponent::copySelection()
         clipboard.push_back (engine.getSong().playlist[(std::size_t) i]);
 }
 
-void PlaylistComponent::pasteClips (std::int64_t at)
+int PlaylistComponent::pasteClips (std::int64_t at, int track)
 {
     if (clipboard.empty())
-        return;
+        return 0;
 
     // pastes at `at` (the clip menu's click), else at the playback cursor (or where the first clip was),
     // keeping tracks and spacing
     std::int64_t first = clipboard.front().start;
+    int top = clipboard.front().track;
     for (const auto& c : clipboard)
+    {
         first = juce::jmin (first, c.start);
+        top = juce::jmin (top, c.track);
+    }
 
     const auto target = at >= 0 ? at : playheadTick >= 0.0 ? snap (playheadTick, true) : first;
+    const auto trackShift = track >= 0 ? track - top : 0;
     std::vector<int> added;
 
-    engine.editSong ([&added, target, first] (Song& s) {
+    engine.editSong ([&added, target, first, trackShift] (Song& s) {
         for (auto c : clipboard)
         {
             if (c.kind == ClipKind::pattern && c.pattern >= (int) s.patterns.size())
@@ -4680,12 +4681,26 @@ void PlaylistComponent::pasteClips (std::int64_t at)
                 continue;
 
             c.start = c.start - first + target;
+            c.track += trackShift;
             added.push_back ((int) s.playlist.size());
             s.playlist.push_back (c);
         }
     });
     setSelection (added);
     sortClips (added);
+    return (int) selection.size();
+}
+
+int PlaylistComponent::splitClipAt (int index, std::int64_t tick)
+{
+    const auto& playlist = engine.getSong().playlist;
+    if (! juce::isPositiveAndBelow (index, (int) playlist.size()) || tick <= playlist[(std::size_t) index].start
+        || tick >= playlist[(std::size_t) index].end())
+        return -1;
+    engine.editSong ([index, tick] (Song& s) { s.playlist.push_back (splitClip (s.playlist[(std::size_t) index], tick)); });
+    setSelection ({ (int) engine.getSong().playlist.size() - 1 });
+    sortClips(); // (the selection follows the sort)
+    return selection.empty() ? -1 : selection.front();
 }
 
 void PlaylistComponent::duplicateSelection()

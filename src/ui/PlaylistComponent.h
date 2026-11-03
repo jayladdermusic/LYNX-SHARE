@@ -137,7 +137,10 @@ public:
     void openClipSource (int clip, bool other); // double click: the clip's pattern / automation (Alt: the other editor)
     void setTimeSelection (std::int64_t from, std::int64_t to); // also selects the clips it touches
     void editTrack (int track, std::function<void (PlaylistTrack&)> change);
-    void pasteClips (std::int64_t at = -1);
+    // Pastes at `at` (else the playhead, or where the clips were); `track` (>= 0): the top clip lands there, the others
+    // keep their tracks below it. Returns how many clips were pasted (selected).
+    int pasteClips (std::int64_t at = -1, int track = -1);
+    int splitClipAt (int clip, std::int64_t tick); // the second part's index (selected), -1 when `tick` is not inside
     std::int64_t gridTicks() const; // the grid step in use (resolving Screen / Nearest note)
     SnapBox& getSnapBox() noexcept { return snapBox; }
 

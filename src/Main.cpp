@@ -3127,6 +3127,24 @@ private:
                         press (juce::KeyPress::rightKey, juce::ModifierKeys::altModifier);
                         check ("Playlist: Alt+Right, the next bar", spoken() == tr ("Bar {0} beat {1}", { "2", "1" }));
                         check ("project: moving around the Playlist changes nothing", ! engine->isModified());
+                        press (juce::KeyPress::downKey);
+                        press (juce::KeyPress::homeKey);
+                        press (juce::KeyPress::rightKey); // one grid step into the first clip (bar 1, one bar long)
+                        press ('e', juce::ModifierKeys::commandModifier);
+                        check ("Playlist: Ctrl+E splits the clip at the cursor", spoken().startsWith (tr ("Split: {0}", { "" })));
+                        press ('x', juce::ModifierKeys::commandModifier);
+                        press (juce::KeyPress::homeKey);
+                        press ('v', juce::ModifierKeys::commandModifier);
+                        {
+                            const auto& clips = engine->getSong().playlist;
+                            std::int64_t length = 0;
+                            int atStart = 0;
+                            for (const auto& c : clips)
+                                if (c.track == 1 && c.start == 0)
+                                    ++atStart, length += c.length;
+                            check ("Playlist: Home, Ctrl+V pastes the cut part at the cursor on the current track",
+                                   spoken().startsWith (tr ("Pasted {0}", { "" })) && atStart == 2 && length == 4 * lynx::ppq);
+                        }
                         press (juce::KeyPress::F9Key);
                         break;
                     case 2:
